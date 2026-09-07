@@ -1,0 +1,6 @@
+#!/bin/bash
+set -eu
+source /usr/share/yunohost/helpers
+
+# Core Lightning is a headless service and has no domain or URL to change.
+ynh_print_info "Core Lightning is a headless service and has no URL to change."

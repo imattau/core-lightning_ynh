@@ -13,5 +13,7 @@ ynh_print_info "The package must be backed up before replacing binaries; databas
 ynh_setup_source --source_id=main --dest_dir="$install_dir"
 ynh_cln_unpack
 ynh_cln_write_config
+yunohost service add "$service_name" --description="Core Lightning node" --log=systemd || true
+ynh_config_add_systemd
 ynh_systemctl --service="$service_name" --action=start --log_path=systemd --timeout=60
 ynh_cln_healthcheck || ynh_die "Core Lightning RPC health check failed after upgrade"

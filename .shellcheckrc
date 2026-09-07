@@ -1,0 +1,8 @@
+# YunoHost injects app/resource/config-panel variables at runtime.
+disable=SC2154
+
+# Helpers in _common.sh are consumed by scripts that source it.
+disable=SC2034
+
+# YunoHost helpers and local cross-file sources are unavailable to CI.
+disable=SC1091
