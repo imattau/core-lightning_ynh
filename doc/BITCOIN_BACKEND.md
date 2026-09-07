@@ -9,6 +9,6 @@ bitcoin-rpcuser=...
 bitcoin-rpcpassword=...
 ```
 
-The current `bitcoin-core_ynh` package in this workspace enables RPC but relies on Bitcoin Core cookie authentication and does not yet provision a restricted CLN credential. This package therefore stops with a clear error instead of adding the CLN user to the Bitcoin data group or copying a broad cookie into another service's configuration.
+The current `bitcoin-core_ynh` package provisions a dedicated credential in `/etc/bitcoin_core/core-lightning.rpc`, and renders it into Bitcoin Core's localhost RPC configuration. The file is root-readable only; the CLN installer reads it while running as root and writes the credential into CLN's root-owned configuration.
 
-The required follow-up is a small service-to-service authentication contract in `bitcoin-core_ynh`: create an `rpcauth` entry or equivalent credential for `core_lightning`, expose it through a protected app action or setting, and rotate it safely on removal.
+Bitcoin Core does not provide method-level RPC ACLs, so this is service-scoped authentication rather than fine-grained authorization. The package must never add the CLN user to the Bitcoin data group or copy Bitcoin's broad cookie into CLN.

@@ -13,7 +13,9 @@ RestartSec=5
 TimeoutStopSec=300
 PrivateTmp=true
 ProtectSystem=full
-ProtectHome=true
+# The YunoHost data resource lives below /home/yunohost.app. Keep other home
+# directories read-only while allowing lightningd to read its own data.
+ProtectHome=read-only
 NoNewPrivileges=true
 ReadWritePaths=__DATA_DIR__
 UMask=0077

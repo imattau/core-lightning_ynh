@@ -15,6 +15,7 @@ lightning_cli="$install_dir/bin/lightning-cli"
 bitcoin_app="bitcoin_core"
 bitcoin_config_dir="/etc/$bitcoin_app"
 bitcoin_config_file="$bitcoin_config_dir/bitcoin.conf"
+bitcoin_cln_credential_file="$bitcoin_config_dir/core-lightning.rpc"
 bitcoin_data_dir="$(ynh_app_setting_get --app="$bitcoin_app" --key=data_dir 2>/dev/null || true)"
 bitcoin_cli="$(ynh_app_setting_get --app="$bitcoin_app" --key=install_dir 2>/dev/null || true)/bitcoin-31.1/bin/bitcoin-cli"
 
@@ -33,10 +34,10 @@ ynh_cln_require_bitcoin_app() {
 }
 
 ynh_cln_read_bitcoin_rpc_credentials() {
-	bitcoin_rpc_user="$(sed -n -E 's/^rpcuser=([^[:space:]]+)$/\1/p' "$bitcoin_config_file" | tail -n1)"
-	bitcoin_rpc_password="$(sed -n -E 's/^rpcpassword=([^[:space:]]+)$/\1/p' "$bitcoin_config_file" | tail -n1)"
+	bitcoin_rpc_user="$(sed -n -E 's/^user=(.*)$/\1/p' "$bitcoin_cln_credential_file" | tail -n1)"
+	bitcoin_rpc_password="$(sed -n -E 's/^password=(.*)$/\1/p' "$bitcoin_cln_credential_file" | tail -n1)"
 	if [ -z "$bitcoin_rpc_user" ] || [ -z "$bitcoin_rpc_password" ]; then
-		ynh_die "Bitcoin Core is installed, but bitcoin-core_ynh has not provisioned a restricted Core Lightning RPC credential yet. Refusing to grant CLN broad access to Bitcoin Core's cookie; see doc/BITCOIN_BACKEND.md."
+		ynh_die "Bitcoin Core is installed, but bitcoin-core_ynh has not provisioned the dedicated Core Lightning RPC credential at $bitcoin_cln_credential_file. Upgrade or repair Bitcoin Core first; refusing to grant CLN broad cookie access."
 	fi
 }
 

@@ -8,7 +8,7 @@ This is an early packaging skeleton. Mainnet support is intentionally conservati
 
 - amd64 and arm64 upstream release archives are wired into the manifest.
 - Mainnet and local Bitcoin Core are the only supported configuration.
-- The package refuses to install until `bitcoin-core_ynh` provides a restricted CLN RPC credential. The current Bitcoin Core package's cookie-only setup is not silently widened to the CLN user.
+- The package refuses to install until `bitcoin-core_ynh` provides its dedicated CLN RPC credential. Bitcoin Core's broad cookie is not copied to the CLN user.
 - Regtest two-node, pruning, destructive restore, attestation, and catalog publication remain to be implemented.
 
 The Nostr Catalog is the intended distribution catalog for this project; the

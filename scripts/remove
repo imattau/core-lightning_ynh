@@ -4,9 +4,9 @@ source /usr/share/yunohost/helpers
 source "$(dirname "$0")/_common.sh"
 
 if systemctl is-active --quiet "$service_name"; then
-	channels="$(ynh_cln_rpc listchannels 2>/dev/null | grep -c '"source"' || true)"
-	if [ "$channels" -gt 0 ] && [ "${YNH_FORCE_REMOVAL:-0}" != "1" ]; then
-		ynh_die "Core Lightning reports open channel state. Removing this app may destroy keys and channel state containing funds. Close channels and retry, or set YNH_FORCE_REMOVAL=1 only after making secure backups."
+	funds="$(ynh_cln_rpc listfunds 2>/dev/null || true)"
+	if printf '%s\n' "$funds" | grep -q '"amount_msat"' && [ "${YNH_FORCE_REMOVAL:-0}" != "1" ]; then
+		ynh_die "Core Lightning reports wallet, channel, or other Lightning funds. Removing this app may destroy keys and channel state containing funds. Sweep or close channels and make secure backups before removal."
 	fi
 fi
 
