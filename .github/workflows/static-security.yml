@@ -1,0 +1,9 @@
+name: Package security checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  static-security:
+    uses: imattau/nostr-yunohost/.github/workflows/static-security.yml@main

@@ -1,0 +1,29 @@
+#!/bin/bash
+set -eu
+source /usr/share/yunohost/helpers
+source "$(dirname "$0")/_common.sh"
+
+ynh_script_progression "Checking Bitcoin Core backend..."
+ynh_cln_require_bitcoin_app
+ynh_cln_read_bitcoin_rpc_credentials
+
+ynh_script_progression "Installing Core Lightning binaries..."
+ynh_setup_source --source_id=main --dest_dir="$install_dir"
+ynh_cln_unpack
+
+ynh_script_progression "Preparing Lightning state and configuration..."
+mkdir -p "$data_dir/bitcoin"
+chown -R "$app:$app" "$data_dir"
+chmod 0700 "$data_dir" "$data_dir/bitcoin"
+ynh_app_setting_set --app="$app" --key=alias --value="${alias:-My YunoHost Lightning Node}"
+ynh_cln_write_config
+
+ynh_script_progression "Registering Core Lightning service..."
+yunohost service add "$service_name" --description="Core Lightning node" --log=systemd || true
+ynh_config_add_systemd
+
+ynh_script_progression "Starting Core Lightning..."
+ynh_systemctl --service="$service_name" --action=start --log_path=systemd --timeout=60
+ynh_cln_healthcheck || ynh_die "Core Lightning RPC did not become available"
+
+ynh_print_info "Core Lightning is running. Bitcoin Core synchronization may still be in progress; use lightning-cli getinfo and bitcoin-cli getblockchaininfo to monitor readiness."

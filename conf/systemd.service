@@ -1,0 +1,22 @@
+[Unit]
+Description=Core Lightning node
+After=network-online.target bitcoin_core.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP__
+Group=__APP__
+ExecStart=__INSTALL_DIR__/bin/lightningd --conf=/etc/__APP__/lightningd.conf
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=300
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+ReadWritePaths=__DATA_DIR__
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

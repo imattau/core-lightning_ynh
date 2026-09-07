@@ -1,0 +1,17 @@
+#!/bin/bash
+set -eu
+source /usr/share/yunohost/helpers
+source "$(dirname "$0")/_common.sh"
+
+ynh_script_progression "Checking Bitcoin Core backend..."
+ynh_cln_require_bitcoin_app
+ynh_cln_read_bitcoin_rpc_credentials
+
+ynh_script_progression "Stopping Core Lightning for a safe upgrade..."
+ynh_systemctl --service="$service_name" --action=stop --timeout=300
+ynh_print_info "The package must be backed up before replacing binaries; database downgrade is not attempted."
+ynh_setup_source --source_id=main --dest_dir="$install_dir"
+ynh_cln_unpack
+ynh_cln_write_config
+ynh_systemctl --service="$service_name" --action=start --log_path=systemd --timeout=60
+ynh_cln_healthcheck || ynh_die "Core Lightning RPC health check failed after upgrade"

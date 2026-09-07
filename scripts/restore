@@ -1,0 +1,15 @@
+#!/bin/bash
+set -eu
+source /usr/share/yunohost/helpers
+source "$(dirname "$0")/_common.sh"
+
+ynh_script_progression "Restoring Core Lightning state..."
+ynh_systemctl --service="$service_name" --action=stop --timeout=300 || true
+mkdir -p "$config_dir" "$data_dir"
+ynh_restore_file --origin_path="$config_dir" --dest_path="$config_dir"
+ynh_restore_file --origin_path="$data_dir" --dest_path="$data_dir"
+ynh_restore_file --origin_path="/etc/systemd/system/$service_name.service" --dest_path="/etc/systemd/system/$service_name.service"
+chown -R "$app:$app" "$data_dir"
+chmod 0700 "$data_dir" "$data_dir/bitcoin"
+ynh_systemctl --service="$service_name" --action=start --log_path=systemd --timeout=60
+ynh_cln_healthcheck || ynh_die "Core Lightning RPC did not become available after restore"

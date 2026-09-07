@@ -1,0 +1,42 @@
+#:schema https://github.com/YunoHost/apps/raw/main/schemas/config_panel.v1.schema.json
+
+version = "1.0"
+
+[node]
+name.en = "Core Lightning"
+name.fr = "Core Lightning"
+services = ["__APP__"]
+
+    [node.settings]
+    name.en = "Node settings"
+    name.fr = "Paramètres du nœud"
+    services = ["__APP__"]
+
+        [node.settings.alias]
+        ask.en = "Node alias"
+        ask.fr = "Alias du nœud"
+        type = "string"
+        bind = "alias:__APP__"
+
+        [node.settings.p2p]
+        ask.en = "Lightning P2P port"
+        ask.fr = "Port P2P Lightning"
+        type = "number"
+        min = 1
+        max = 65535
+        default = 9735
+        bind = "p2p:__APP__"
+
+        [node.settings.log_level]
+        ask.en = "Log level"
+        ask.fr = "Niveau de journalisation"
+        type = "select"
+        choices = ["info", "debug", "io"]
+        default = "info"
+        bind = "log_level:__APP__"
+
+        [node.status]
+        ask.en = "Operational status"
+        ask.fr = "État opérationnel"
+        type = "alert"
+        style = "info"

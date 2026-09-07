@@ -1,0 +1,57 @@
+#!/bin/bash
+
+source "$(dirname "$0")/_common.sh"
+source /usr/share/yunohost/helpers
+
+ynh_abort_if_errors
+
+get__alias() {
+	ynh_cln_setting alias "My YunoHost Lightning Node"
+}
+
+set__alias() {
+	ynh_app_setting_set --app="$app" --key=alias --value="$alias"
+	ynh_cln_read_bitcoin_rpc_credentials
+	ynh_cln_write_config
+	ynh_exec_warn_less systemctl restart "$service_name.service"
+}
+
+get__p2p() {
+	ynh_app_setting_get --app="$app" --key=p2p 2>/dev/null || echo 9735
+}
+
+set__p2p() {
+	case "$p2p" in
+		''|*[!0-9]*) ynh_die "Lightning P2P port must be numeric" ;;
+	esac
+	[ "$p2p" -ge 1 ] && [ "$p2p" -le 65535 ] || ynh_die "Lightning P2P port must be between 1 and 65535"
+	ynh_app_setting_set --app="$app" --key=p2p --value="$p2p"
+	ynh_cln_read_bitcoin_rpc_credentials
+	ynh_cln_write_config
+	ynh_exec_warn_less systemctl restart "$service_name.service"
+}
+
+get__log_level() {
+	ynh_cln_setting log_level info
+}
+
+set__log_level() {
+	case "$log_level" in
+		info|debug|io) ;;
+		*) ynh_die "Unsupported Core Lightning log level: $log_level" ;;
+	esac
+	ynh_app_setting_set --app="$app" --key=log_level --value="$log_level"
+	ynh_cln_read_bitcoin_rpc_credentials
+	ynh_cln_write_config
+	ynh_exec_warn_less systemctl restart "$service_name.service"
+}
+
+get__status() {
+	if ynh_cln_healthcheck 2>/dev/null; then
+		ynh_cln_rpc getinfo 2>/dev/null || true
+	else
+		echo "RPC unavailable. The service may be stopped or Bitcoin Core may still be synchronizing."
+	fi
+}
+
+ynh_app_config_run "$1"

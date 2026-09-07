@@ -1,0 +1,58 @@
+#:schema https://raw.githubusercontent.com/YunoHost/apps/main/schemas/manifest.v2.schema.json
+
+packaging_format = 2
+id = "core_lightning"
+name = "Core Lightning"
+description.en = "Self-hosted Lightning node backed by a local Bitcoin Core node"
+description.fr = "Nœud Lightning auto-hébergé utilisant un nœud Bitcoin Core local"
+version = "26.06.7~ynh1"
+maintainers = ["core-lightning_ynh contributors"]
+
+[upstream]
+license = "MIT"
+website = "https://corelightning.org/"
+code = "https://github.com/ElementsProject/lightning"
+
+[integration]
+yunohost = ">= 12.0"
+helpers_version = "2.1"
+architectures = ["amd64", "arm64"]
+multi_instance = false
+ldap = false
+sso = false
+disk = "1G"
+ram.build = "50M"
+ram.runtime = "512M"
+
+[install]
+    [install.alias]
+    ask.en = "Node alias"
+    ask.fr = "Alias du nœud"
+    type = "string"
+    default = "My YunoHost Lightning Node"
+    help.en = "A public label for your node. It does not affect its cryptographic identity."
+
+[resources]
+    [resources.sources.main]
+    url = "https://github.com/ElementsProject/lightning/releases/download/v26.06.7/clightning-v26.06.7-Ubuntu-22.04-amd64.tar.xz"
+    sha256 = "53ddf124fe7058b6a2fc059d104976cc54ba5be21dc55b295cd82d01cabeb39c"
+    format = "tar.xz"
+    extract = false
+
+        [resources.sources.main.arm64]
+        url = "https://github.com/ElementsProject/lightning/releases/download/v26.06.7/clightning-v26.06.7-Ubuntu-22.04-arm64.tar.xz"
+        sha256 = "a6e89d49468dac83122d6b795796b7f2ebb55eab6181b419f1cf9a73aeae3965"
+
+    [resources.system_user]
+
+    [resources.install_dir]
+
+    [resources.data_dir]
+
+    [resources.ports]
+        [resources.ports.p2p]
+        default = 9735
+        exposed = true
+
+    [resources.apt]
+    packages = "ca-certificates"
