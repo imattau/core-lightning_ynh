@@ -24,7 +24,7 @@ ynh_config_add_systemd
 
 ynh_script_progression "Starting Core Lightning..."
 ynh_systemctl --service="$service_name" --action=start --log_path=systemd --timeout=60
-ynh_cln_wait_for_rpc 60 || ynh_die "Core Lightning RPC did not become available"
+ynh_cln_wait_for_rpc 300 || ynh_die "Core Lightning RPC did not become available"
 ynh_cln_fix_grpc_cert_perms
 
 ynh_print_info "Core Lightning is running. Bitcoin Core synchronization may still be in progress; use lightning-cli getinfo and bitcoin-cli getblockchaininfo to monitor readiness."
