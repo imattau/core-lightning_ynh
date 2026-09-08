@@ -9,6 +9,7 @@ This is an early packaging skeleton. Mainnet support is intentionally conservati
 - amd64 and arm64 upstream release archives are wired into the manifest.
 - Mainnet and local Bitcoin Core are the only supported configuration.
 - The package refuses to install until `bitcoin-core_ynh` provides its dedicated CLN RPC credential. Bitcoin Core's broad cookie is not copied to the CLN user.
+- A mainnet Core Lightning startup test should wait until Bitcoin Core has finished initial block download. Bitcoin Core's RPC can be reachable while it is still syncing, but CLN must independently catch up to the Bitcoin chain. Use Bitcoin Core regtest for fast installation and integration tests.
 - Regtest two-node, pruning, destructive restore, attestation, and catalog publication remain to be implemented.
 
 The Nostr Catalog is the intended distribution catalog for this project; the
@@ -20,11 +21,31 @@ gates and a public, committed repository ref.
 
 ## First commands
 
-After installation, use the local RPC socket as the package user:
+After Bitcoin Core has synchronized, use the local RPC socket as the package user. The
+`--lightning-dir` value is the CLN base directory; Core Lightning adds the
+`bitcoin` network directory below it:
 
 ```sh
-sudo -u core_lightning lightning-cli --lightning-dir=/home/yunohost.app/core_lightning/bitcoin getinfo
-sudo -u core_lightning lightning-cli --lightning-dir=/home/yunohost.app/core_lightning/bitcoin listpeers
+sudo -u core_lightning lightning-cli --lightning-dir=/home/yunohost.app/core_lightning getinfo
+sudo -u core_lightning lightning-cli --lightning-dir=/home/yunohost.app/core_lightning listpeers
 ```
 
 Read `doc/BACKUP.md` and `doc/RECOVERY.md` before funding the node.
+
+## Backend readiness and testing
+
+Check Bitcoin Core before diagnosing a CLN startup failure:
+
+```sh
+bitcoin-cli -conf=/etc/bitcoin_core/bitcoin.conf getblockchaininfo
+```
+
+For a real mainnet node, wait until `initialblockdownload` is false and the
+chain is near the current network tip. During IBD, Bitcoin Core may answer RPC
+requests while Core Lightning is still unable to become operational. A package
+install test that times out during CLN RPC startup is therefore inconclusive
+until backend synchronization is complete.
+
+Use Bitcoin Core regtest for fast CI and two-node CLN tests. Mainnet tests
+should use negligible funds and should only begin after the regtest and
+pruned-backend cases pass.
