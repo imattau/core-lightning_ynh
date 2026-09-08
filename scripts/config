@@ -17,7 +17,7 @@ set__alias() {
 }
 
 get__p2p() {
-	ynh_cln_setting p2p 9735
+	ynh_cln_p2p_port
 }
 
 set__p2p() {

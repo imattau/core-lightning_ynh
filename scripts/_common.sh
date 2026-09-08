@@ -25,6 +25,24 @@ ynh_cln_setting() {
 	printf '%s' "${value:-$default}"
 }
 
+# The p2p port resource is provisioned by YunoHost under the app setting
+# "port_p2p" (confirmed against bitcoin_core's own settings), with actual
+# availability checked at provision time - not the bare "p2p" setting the
+# config panel reads/writes. Prefer an explicit config-panel override
+# (p2p) if one was set, otherwise use the resource-assigned,
+# conflict-checked port_p2p, only falling back to a literal default if
+# neither exists (e.g. a pre-resource-system install).
+ynh_cln_p2p_port() {
+	local override resource
+	override="$(ynh_app_setting_get --app="$app" --key=p2p 2>/dev/null || true)"
+	if [ -n "$override" ]; then
+		printf '%s' "$override"
+		return 0
+	fi
+	resource="$(ynh_app_setting_get --app="$app" --key=port_p2p 2>/dev/null || true)"
+	printf '%s' "${resource:-9735}"
+}
+
 ynh_cln_require_bitcoin_app() {
 	if ! yunohost app list --output-as json 2>/dev/null | jq -e --arg app "$bitcoin_app" '[.apps[]?.id] | index($app) != null' >/dev/null; then
 		ynh_die "Core Lightning requires a Bitcoin backend. Install Bitcoin Core for YunoHost first."
@@ -55,7 +73,7 @@ ynh_cln_write_config() {
 		echo "bitcoin-rpcport=8332"
 		echo "bitcoin-rpcuser=$bitcoin_rpc_user"
 		echo "bitcoin-rpcpassword=$bitcoin_rpc_password"
-		echo "addr=0.0.0.0:$(ynh_cln_setting p2p 9735)"
+		echo "addr=0.0.0.0:$(ynh_cln_p2p_port)"
 		if [ "$(ynh_cln_setting grpc_enabled false)" = "true" ]; then
 			echo "grpc-port=$(ynh_cln_setting grpc_port 9736)"
 		fi
