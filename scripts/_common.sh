@@ -55,7 +55,7 @@ ynh_cln_write_config() {
 		echo "bitcoin-rpcport=8332"
 		echo "bitcoin-rpcuser=$bitcoin_rpc_user"
 		echo "bitcoin-rpcpassword=$bitcoin_rpc_password"
-		echo "addr=0.0.0.0:$(ynh_app_setting_get --app="$app" --key=p2p 2>/dev/null || echo 9735)"
+		echo "addr=0.0.0.0:$(ynh_cln_setting p2p 9735)"
 		if [ "$(ynh_cln_setting grpc_enabled false)" = "true" ]; then
 			echo "grpc-port=$(ynh_cln_setting grpc_port 9736)"
 		fi

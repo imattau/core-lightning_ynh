@@ -17,7 +17,7 @@ set__alias() {
 }
 
 get__p2p() {
-	ynh_app_setting_get --app="$app" --key=p2p 2>/dev/null || echo 9735
+	ynh_cln_setting p2p 9735
 }
 
 set__p2p() {
