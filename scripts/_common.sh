@@ -62,9 +62,8 @@ ynh_cln_write_config() {
 }
 
 ynh_cln_unpack() {
-	local archive
-	archive="$(find "$install_dir" -maxdepth 1 -type f -name 'clightning-*.tar.xz' -print -quit)"
-	[ -n "$archive" ] || ynh_die "Core Lightning release archive was not found."
+	local archive="$install_dir/clightning.tar.xz"
+	[ -f "$archive" ] || ynh_die "Core Lightning release archive was not found at $archive."
 	tar -xJf "$archive" -C "$install_dir" --strip-components=2
 	rm -f "$archive"
 	[ -x "$lightningd_bin" ] || ynh_die "Core Lightning archive did not contain $lightningd_bin"

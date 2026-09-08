@@ -5,7 +5,7 @@ id = "core_lightning"
 name = "Core Lightning"
 description.en = "Self-hosted Lightning node backed by a local Bitcoin Core node"
 description.fr = "Nœud Lightning auto-hébergé utilisant un nœud Bitcoin Core local"
-version = "26.06.7~ynh3"
+version = "26.06.7~ynh4"
 maintainers = ["core-lightning_ynh contributors"]
 
 [upstream]
@@ -38,6 +38,7 @@ ram.runtime = "512M"
     sha256 = "53ddf124fe7058b6a2fc059d104976cc54ba5be21dc55b295cd82d01cabeb39c"
     format = "tar.xz"
     extract = false
+    rename = "clightning.tar.xz"
 
         [resources.sources.main.arm64]
         url = "https://github.com/ElementsProject/lightning/releases/download/v26.06.7/clightning-v26.06.7-Ubuntu-22.04-arm64.tar.xz"
