@@ -6,6 +6,13 @@ source "$(dirname "$0")/_common.sh"
 ynh_script_progression "Checking Bitcoin Core backend..."
 ynh_cln_require_bitcoin_app
 
+# The release binary is deliberately excluded from backups (not part of
+# $config_dir/$data_dir), so it must be fetched and unpacked fresh here,
+# exactly as on a first install, before the service can start.
+ynh_script_progression "Reinstalling Core Lightning binaries..."
+ynh_setup_source --source_id=main --dest_dir="$install_dir"
+ynh_cln_unpack
+
 ynh_script_progression "Restoring Core Lightning state..."
 ynh_systemctl --service="$service_name" --action=stop --timeout=300 || true
 mkdir -p "$config_dir" "$data_dir"
