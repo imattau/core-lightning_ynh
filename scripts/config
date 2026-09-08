@@ -13,7 +13,7 @@ set__alias() {
 	ynh_app_setting_set --app="$app" --key=alias --value="$alias"
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
-	ynh_exec_warn_less systemctl restart "$service_name.service"
+	ynh_systemctl --service="$service_name" --action=restart
 }
 
 get__p2p() {
@@ -28,7 +28,7 @@ set__p2p() {
 	ynh_app_setting_set --app="$app" --key=p2p --value="$p2p"
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
-	ynh_exec_warn_less systemctl restart "$service_name.service"
+	ynh_systemctl --service="$service_name" --action=restart
 }
 
 get__log_level() {
@@ -43,12 +43,18 @@ set__log_level() {
 	ynh_app_setting_set --app="$app" --key=log_level --value="$log_level"
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
-	ynh_exec_warn_less systemctl restart "$service_name.service"
+	ynh_systemctl --service="$service_name" --action=restart
 }
 
 get__status() {
+	local info summary
 	if ynh_cln_healthcheck 2>/dev/null; then
-		ynh_cln_rpc getinfo 2>/dev/null || true
+		info="$(ynh_cln_rpc getinfo 2>/dev/null || true)"
+		if summary="$(printf '%s' "$info" | jq -er '. as $i | "RPC OK; node_id=" + ($i.id // "unknown") + "; alias=" + ($i.alias // "unknown") + "; network=" + ($i.network // "unknown") + "; version=" + ($i.version // "unknown")' 2>/dev/null)"; then
+			echo "$summary"
+		else
+			echo "RPC OK; node details unavailable"
+		fi
 	else
 		echo "RPC unavailable. The service may be stopped or Bitcoin Core may still be synchronizing."
 	fi

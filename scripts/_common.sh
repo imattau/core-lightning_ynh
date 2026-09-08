@@ -51,7 +51,7 @@ ynh_cln_write_config() {
 		echo "rpc-file=$data_dir/bitcoin/lightning-rpc"
 		echo "log-file=$data_dir/bitcoin/lightningd.log"
 		echo "log-level=$(ynh_cln_setting log_level info)"
-	echo "bitcoin-rpcconnect=127.0.0.1"
+		echo "bitcoin-rpcconnect=127.0.0.1"
 		echo "bitcoin-rpcport=8332"
 		echo "bitcoin-rpcuser=$bitcoin_rpc_user"
 		echo "bitcoin-rpcpassword=$bitcoin_rpc_password"
@@ -69,8 +69,10 @@ ynh_cln_unpack() {
 	rm -f "$archive"
 	[ -x "$lightningd_bin" ] || ynh_die "Core Lightning archive did not contain $lightningd_bin"
 	[ -x "$lightning_cli" ] || ynh_die "Core Lightning archive did not contain $lightning_cli"
-	chown -R root:root "$install_dir"
-	chmod -R o-rwx "$install_dir"
+	# Keep the release owned by root while granting the service account's
+	# group the read/execute access required by systemd.
+	chown -R root:"$app" "$install_dir"
+	chmod -R u=rwX,g=rX,o=--- "$install_dir"
 }
 
 ynh_cln_rpc() {
