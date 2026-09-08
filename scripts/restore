@@ -15,3 +15,4 @@ yunohost service add "$service_name" --description="Core Lightning node" --log=s
 ynh_config_add_systemd
 ynh_systemctl --service="$service_name" --action=start --log_path=systemd --timeout=60
 ynh_cln_wait_for_rpc 60 || ynh_die "Core Lightning RPC did not become available after restore"
+ynh_cln_fix_grpc_cert_perms

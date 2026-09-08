@@ -55,5 +55,9 @@ ram.runtime = "512M"
         default = 9735
         exposed = true
 
+        [resources.ports.grpc]
+        default = 9736
+        exposed = false
+
     [resources.apt]
     packages = "ca-certificates"

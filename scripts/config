@@ -46,6 +46,40 @@ set__log_level() {
 	ynh_systemctl --service="$service_name" --action=restart
 }
 
+get__grpc_enabled() {
+	ynh_cln_setting grpc_enabled false
+}
+
+set__grpc_enabled() {
+	case "$grpc_enabled" in
+		true|false) ;;
+		*) ynh_die "grpc_enabled must be true or false" ;;
+	esac
+	ynh_app_setting_set --app="$app" --key=grpc_enabled --value="$grpc_enabled"
+	ynh_cln_read_bitcoin_rpc_credentials
+	ynh_cln_write_config
+	ynh_systemctl --service="$service_name" --action=restart
+	ynh_cln_wait_for_rpc 60 || ynh_die "Core Lightning RPC did not come back after changing grpc_enabled"
+	ynh_cln_fix_grpc_cert_perms
+}
+
+get__grpc_port() {
+	ynh_cln_setting grpc_port 9736
+}
+
+set__grpc_port() {
+	case "$grpc_port" in
+		''|*[!0-9]*) ynh_die "gRPC port must be numeric" ;;
+	esac
+	[ "$grpc_port" -ge 1 ] && [ "$grpc_port" -le 65535 ] || ynh_die "gRPC port must be between 1 and 65535"
+	ynh_app_setting_set --app="$app" --key=grpc_port --value="$grpc_port"
+	ynh_cln_read_bitcoin_rpc_credentials
+	ynh_cln_write_config
+	ynh_systemctl --service="$service_name" --action=restart
+	ynh_cln_wait_for_rpc 60 || ynh_die "Core Lightning RPC did not come back after changing grpc_port"
+	ynh_cln_fix_grpc_cert_perms
+}
+
 get__status() {
 	local info summary
 	if ynh_cln_healthcheck 2>/dev/null; then

@@ -33,5 +33,5 @@ Never commit the catalog publisher private key or CI verifier private key, and
 never reuse either identity for the other role.
 
 The package is not ready for publication until Bitcoin Core service-to-service
-authentication, regtest, pruning, backup/recovery, and removal-safety gates
-are complete.
+authentication, regtest, pruning, backup/recovery, removal-safety, and gRPC
+exposure (see `doc/GRPC_BACKEND.md`) gates are complete.

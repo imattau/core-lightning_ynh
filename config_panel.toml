@@ -35,6 +35,24 @@ services = ["__APP__"]
         default = "info"
         bind = "log_level:__APP__"
 
+        [node.settings.grpc_enabled]
+        ask.en = "Enable gRPC (for local apps like Alby Hub)"
+        ask.fr = "Activer gRPC (pour les applications locales comme Alby Hub)"
+        type = "boolean"
+        default = false
+        bind = "grpc_enabled:__APP__"
+        help.en = "Exposes a localhost-only, certificate-authenticated gRPC endpoint that other apps on this server can use as a Lightning backend. Never opened to the internet."
+
+        [node.settings.grpc_port]
+        ask.en = "gRPC port"
+        ask.fr = "Port gRPC"
+        type = "number"
+        min = 1
+        max = 65535
+        default = 9736
+        bind = "grpc_port:__APP__"
+        visible = "grpc_enabled"
+
         [node.status]
         ask.en = "Operational status"
         ask.fr = "État opérationnel"

@@ -56,9 +56,28 @@ ynh_cln_write_config() {
 		echo "bitcoin-rpcuser=$bitcoin_rpc_user"
 		echo "bitcoin-rpcpassword=$bitcoin_rpc_password"
 		echo "addr=0.0.0.0:$(ynh_app_setting_get --app="$app" --key=p2p 2>/dev/null || echo 9735)"
+		if [ "$(ynh_cln_setting grpc_enabled false)" = "true" ]; then
+			echo "grpc-port=$(ynh_cln_setting grpc_port 9736)"
+		fi
 	} > "$config_file"
 	chown root:"$app" "$config_file"
 	chmod 0640 "$config_file"
+}
+
+# Grants the "$app" group read access to the gRPC client certs CLN
+# auto-generates under $data_dir/bitcoin/ once grpc-port is set, without
+# loosening access to hsm_secret or anything else in that directory.
+# Must run after lightningd has actually started with grpc enabled, since
+# the certs don't exist until then.
+ynh_cln_fix_grpc_cert_perms() {
+	[ "$(ynh_cln_setting grpc_enabled false)" = "true" ] || return 0
+	local cert_dir="$data_dir/bitcoin"
+	local cert
+	chmod 0710 "$data_dir" "$cert_dir" 2>/dev/null || true
+	for cert in ca.pem client.pem client-key.pem; do
+		[ -f "$cert_dir/$cert" ] && chmod 0640 "$cert_dir/$cert"
+	done
+	return 0
 }
 
 ynh_cln_unpack() {
