@@ -174,6 +174,12 @@ ynh_cln_wait_for_rpc() {
 ynh_cln_dump_diagnostics() {
 	ynh_print_warn "--- Core Lightning diagnostics (systemctl status) ---"
 	systemctl status "$service_name" --no-pager -l 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+	# systemctl status's default trailing journal excerpt isn't reliably
+	# present in this environment - pull it explicitly so a stderr-only
+	# fatal (e.g. a config-parse error, before lightningd.log is even
+	# opened) actually surfaces instead of leaving a silent gap.
+	ynh_print_warn "--- Core Lightning diagnostics (journalctl -u $service_name) ---"
+	journalctl -u "$service_name" --no-pager -n 100 --output=cat 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
 	ynh_print_warn "--- Core Lightning diagnostics (lightningd.log tail) ---"
 	if [ -r "$data_dir/bitcoin/lightningd.log" ]; then
 		tail -n 60 "$data_dir/bitcoin/lightningd.log" 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
