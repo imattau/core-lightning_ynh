@@ -5,6 +5,7 @@ source "$(dirname "$0")/_common.sh"
 
 ynh_script_progression "Checking Bitcoin Core backend..."
 ynh_cln_require_bitcoin_app
+ynh_cln_read_bitcoin_rpc_credentials
 
 # The release binary is deliberately excluded from backups (not part of
 # $config_dir/$data_dir), so it must be fetched and unpacked fresh here,
@@ -19,6 +20,11 @@ mkdir -p "$config_dir" "$data_dir"
 ynh_restore "$config_dir"
 ynh_restore "$data_dir"
 ynh_restore "/etc/systemd/system/$service_name.service"
+# ynh_restore doesn't guarantee the exact ownership/mode ynh_cln_write_config
+# originally set - lightningd (running as $app) must be able to read its own
+# config, so reassert it explicitly rather than trusting the restore verbatim.
+chown root:"$app" "$config_file"
+chmod 0640 "$config_file"
 chown -R "$app:$app" "$data_dir"
 chmod 0700 "$data_dir" "$data_dir/bitcoin"
 yunohost service add "$service_name" --description="Core Lightning node" --log=systemd || true

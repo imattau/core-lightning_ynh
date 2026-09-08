@@ -182,7 +182,7 @@ ynh_cln_dump_diagnostics() {
 	fi
 	ynh_print_warn "--- Core Lightning diagnostics (bitcoind reachability) ---"
 	if command -v curl >/dev/null 2>&1; then
-		curl -s -u "$bitcoin_rpc_user:$bitcoin_rpc_password" --data-binary '{"jsonrpc":"1.0","id":"clncheck","method":"getblockchaininfo","params":[]}' -H 'content-type: text/plain;' http://127.0.0.1:8332/ 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+		curl -s -u "${bitcoin_rpc_user:-}:${bitcoin_rpc_password:-}" --data-binary '{"jsonrpc":"1.0","id":"clncheck","method":"getblockchaininfo","params":[]}' -H 'content-type: text/plain;' http://127.0.0.1:8332/ 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
 	fi
 	ynh_print_warn "--- end Core Lightning diagnostics ---"
 }
