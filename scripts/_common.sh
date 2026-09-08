@@ -43,6 +43,24 @@ ynh_cln_p2p_port() {
 	printf '%s' "${resource:-9735}"
 }
 
+# Same idea as ynh_cln_p2p_port, for the grpc port resource ("port_grpc").
+# This is what makes gRPC's port genuinely auto-detected/conflict-avoided:
+# the resources.ports.grpc resource is provisioned (and bind-tested) at
+# install time regardless of whether grpc_enabled is set yet, so by the
+# time an admin turns gRPC on, port_grpc already holds a real, free port -
+# not just the literal manifest default, which could collide with
+# whatever port_p2p also landed on (see doc/ADMIN.md's port-collision note).
+ynh_cln_grpc_port() {
+	local override resource
+	override="$(ynh_app_setting_get --app="$app" --key=grpc_port 2>/dev/null || true)"
+	if [ -n "$override" ]; then
+		printf '%s' "$override"
+		return 0
+	fi
+	resource="$(ynh_app_setting_get --app="$app" --key=port_grpc 2>/dev/null || true)"
+	printf '%s' "${resource:-9736}"
+}
+
 ynh_cln_require_bitcoin_app() {
 	if ! yunohost app list --output-as json 2>/dev/null | jq -e --arg app "$bitcoin_app" '[.apps[]?.id] | index($app) != null' >/dev/null; then
 		ynh_die "Core Lightning requires a Bitcoin backend. Install Bitcoin Core for YunoHost first."
@@ -82,7 +100,12 @@ ynh_cln_write_config() {
 		echo "bitcoin-cli=$bitcoin_cli"
 		echo "addr=0.0.0.0:$(ynh_cln_p2p_port)"
 		if [ "$(ynh_cln_setting grpc_enabled false)" = "true" ]; then
-			echo "grpc-port=$(ynh_cln_setting grpc_port 9736)"
+			local grpc_port_value
+			grpc_port_value="$(ynh_cln_grpc_port)"
+			if [ "$grpc_port_value" = "$(ynh_cln_p2p_port)" ]; then
+				ynh_die "gRPC port ($grpc_port_value) is the same as the P2P port. port_p2p and port_grpc are each conflict-checked against other apps independently, not against each other - set a different grpc_port via the config panel."
+			fi
+			echo "grpc-port=$grpc_port_value"
 		else
 			# CLN's bundled cln-grpc plugin self-activates on its own
 			# built-in default port even without a grpc-port line - it is

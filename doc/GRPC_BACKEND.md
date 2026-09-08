@@ -20,9 +20,11 @@ Set `grpc_enabled = true` (and optionally a non-default `grpc_port`) via the con
 - Only `ca.pem`, `client.pem`, and `client-key.pem` are ever made group-readable; every other file under `$data_dir` (including `hsm_secret`) stays owner-only.
 - Permission fix-up (`ynh_cln_fix_grpc_cert_perms`) runs after every install, upgrade, restore, and config-panel change to `grpc_enabled`/`grpc_port`, so it self-heals if CLN regenerates certs.
 
-## Known port-collision risk
+## Port auto-detection, and its one gap
 
-`ports.p2p` (default `9735`) and `ports.grpc` (default `9736`) are adjacent. If another app already holds `9735` (e.g. a Lightning wallet's own embedded node), YunoHost's port-conflict avoidance moves P2P to the next free port - which can land exactly on gRPC's default and collide with it once gRPC is enabled. Check the actual assigned P2P port before picking `grpc_port`.
+`grpc_port` is not just a literal default - the config-panel getter reads the actual YunoHost-assigned `port_grpc` resource value, which is conflict-checked against other apps at install time (same mechanism as `port_p2p`). This is why gRPC's port doesn't normally need manual attention even when another app (e.g. a Lightning wallet's own embedded node) already holds `9735`, CLN's own default P2P port.
+
+The one thing this can't self-resolve: `port_p2p` and `port_grpc` are each checked independently against *other* apps, not against each other, so they could still coincide. `ynh_cln_write_config` refuses to write a config where they're equal - it `ynh_die`s with a clear message instead of producing another collision. If you hit that, pick a different `grpc_port` via the config panel.
 
 ## What this package does not guarantee
 

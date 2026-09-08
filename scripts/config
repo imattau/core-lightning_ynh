@@ -67,7 +67,7 @@ set__grpc_enabled() {
 }
 
 get__grpc_port() {
-	ynh_cln_setting grpc_port 9736
+	ynh_cln_grpc_port
 }
 
 set__grpc_port() {
