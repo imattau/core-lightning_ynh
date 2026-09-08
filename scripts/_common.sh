@@ -112,3 +112,22 @@ ynh_cln_wait_for_rpc() {
 	done
 	return 1
 }
+
+# Surfaces why lightningd never answered RPC, at WARNING level so it lands
+# in the operation log rather than being swallowed. Call this right before
+# ynh_die on a failed ynh_cln_wait_for_rpc.
+ynh_cln_dump_diagnostics() {
+	ynh_print_warn "--- Core Lightning diagnostics (systemctl status) ---"
+	systemctl status "$service_name" --no-pager -l 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+	ynh_print_warn "--- Core Lightning diagnostics (lightningd.log tail) ---"
+	if [ -r "$data_dir/bitcoin/lightningd.log" ]; then
+		tail -n 60 "$data_dir/bitcoin/lightningd.log" 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+	else
+		ynh_print_warn "$data_dir/bitcoin/lightningd.log not found or not readable"
+	fi
+	ynh_print_warn "--- Core Lightning diagnostics (bitcoind reachability) ---"
+	if command -v curl >/dev/null 2>&1; then
+		curl -s -u "$bitcoin_rpc_user:$bitcoin_rpc_password" --data-binary '{"jsonrpc":"1.0","id":"clncheck","method":"getblockchaininfo","params":[]}' -H 'content-type: text/plain;' http://127.0.0.1:8332/ 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+	fi
+	ynh_print_warn "--- end Core Lightning diagnostics ---"
+}

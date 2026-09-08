@@ -59,7 +59,10 @@ set__grpc_enabled() {
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
 	ynh_systemctl --service="$service_name" --action=restart
-	ynh_cln_wait_for_rpc 300 || ynh_die "Core Lightning RPC did not come back after changing grpc_enabled"
+	if ! ynh_cln_wait_for_rpc 300; then
+		ynh_cln_dump_diagnostics
+		ynh_die "Core Lightning RPC did not come back after changing grpc_enabled"
+	fi
 	ynh_cln_fix_grpc_cert_perms
 }
 
@@ -76,7 +79,10 @@ set__grpc_port() {
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
 	ynh_systemctl --service="$service_name" --action=restart
-	ynh_cln_wait_for_rpc 300 || ynh_die "Core Lightning RPC did not come back after changing grpc_port"
+	if ! ynh_cln_wait_for_rpc 300; then
+		ynh_cln_dump_diagnostics
+		ynh_die "Core Lightning RPC did not come back after changing grpc_port"
+	fi
 	ynh_cln_fix_grpc_cert_perms
 }
 
