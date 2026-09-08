@@ -51,8 +51,12 @@ get__grpc_enabled() {
 }
 
 set__grpc_enabled() {
+	# YunoHost's config-panel boolean type passes its own yes/no encoding
+	# (1/0) to the setter, not the literal strings "true"/"false" - accept
+	# both so this works whether called via the panel or directly.
 	case "$grpc_enabled" in
-		true|false) ;;
+		true|1) grpc_enabled=true ;;
+		false|0) grpc_enabled=false ;;
 		*) ynh_die "grpc_enabled must be true or false" ;;
 	esac
 	ynh_app_setting_set --app="$app" --key=grpc_enabled --value="$grpc_enabled"
