@@ -83,6 +83,13 @@ ynh_cln_write_config() {
 		echo "addr=0.0.0.0:$(ynh_cln_p2p_port)"
 		if [ "$(ynh_cln_setting grpc_enabled false)" = "true" ]; then
 			echo "grpc-port=$(ynh_cln_setting grpc_port 9736)"
+		else
+			# CLN's bundled cln-grpc plugin self-activates on its own
+			# built-in default port even without a grpc-port line - it is
+			# not actually opt-in on its own. Disable it explicitly so
+			# "off by default" is true, and so it can't collide with
+			# whatever port the p2p resource landed on (see doc/ADMIN.md).
+			echo "disable-plugin=cln-grpc"
 		fi
 	} > "$config_file"
 	chown root:"$app" "$config_file"
