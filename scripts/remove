@@ -13,7 +13,9 @@ fi
 ynh_script_progression "Stopping Core Lightning..."
 ynh_systemctl --service="$service_name" --action=stop --timeout=300 || true
 yunohost service remove "$service_name" || true
-ynh_config_rm
+systemctl disable "$service_name.service" >/dev/null 2>&1 || true
+ynh_secure_remove "/etc/systemd/system/$service_name.service"
+systemctl daemon-reload
 ynh_secure_remove "$config_dir"
 ynh_secure_remove "$install_dir"
 ynh_secure_remove "$data_dir"

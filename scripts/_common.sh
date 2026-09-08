@@ -26,7 +26,7 @@ ynh_cln_setting() {
 }
 
 ynh_cln_require_bitcoin_app() {
-	if ! yunohost app list 2>/dev/null | grep -q '^  - bitcoin_core:'; then
+	if ! yunohost app list --output-as json 2>/dev/null | jq -e --arg app "$bitcoin_app" '[.apps[]?.id] | index($app) != null' >/dev/null; then
 		ynh_die "Core Lightning requires a Bitcoin backend. Install Bitcoin Core for YunoHost first."
 	fi
 	[ -r "$bitcoin_config_file" ] || ynh_die "Bitcoin Core was detected, but $bitcoin_config_file is not readable."
