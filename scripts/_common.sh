@@ -49,6 +49,7 @@ ynh_cln_require_bitcoin_app() {
 	fi
 	[ -r "$bitcoin_config_file" ] || ynh_die "Bitcoin Core was detected, but $bitcoin_config_file is not readable."
 	[ -n "$bitcoin_data_dir" ] || ynh_die "Bitcoin Core data directory could not be discovered."
+	[ -x "$bitcoin_cli" ] || ynh_die "Core Lightning's bcli plugin needs the bitcoin-cli binary, but $bitcoin_cli is not executable. bitcoin-core_ynh may have changed its install layout or version - update bitcoin_cli in _common.sh."
 }
 
 ynh_cln_read_bitcoin_rpc_credentials() {
@@ -73,6 +74,7 @@ ynh_cln_write_config() {
 		echo "bitcoin-rpcport=8332"
 		echo "bitcoin-rpcuser=$bitcoin_rpc_user"
 		echo "bitcoin-rpcpassword=$bitcoin_rpc_password"
+		echo "bitcoin-cli=$bitcoin_cli"
 		echo "addr=0.0.0.0:$(ynh_cln_p2p_port)"
 		if [ "$(ynh_cln_setting grpc_enabled false)" = "true" ]; then
 			echo "grpc-port=$(ynh_cln_setting grpc_port 9736)"
