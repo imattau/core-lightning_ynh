@@ -12,6 +12,7 @@ ynh_systemctl --service="$service_name" --action=stop --timeout=300
 ynh_print_info "The package must be backed up before replacing binaries; database downgrade is not attempted."
 ynh_setup_source --source_id=main --dest_dir="$install_dir"
 ynh_cln_unpack
+ynh_cln_check_runtime_access
 ynh_cln_write_config
 yunohost service add "$service_name" --description="Core Lightning node" --log=systemd || true
 ynh_config_add_systemd
@@ -20,4 +21,5 @@ if ! ynh_cln_wait_for_rpc 300; then
 	ynh_cln_dump_diagnostics
 	ynh_die "Core Lightning RPC health check failed after upgrade"
 fi
+ynh_cln_check_bitcoin_rpc
 ynh_cln_fix_grpc_cert_perms

@@ -7,6 +7,7 @@ Wants=network-online.target
 Type=simple
 User=__APP__
 Group=__APP__
+SupplementaryGroups=bitcoin_core
 ExecStart=__INSTALL_DIR__/bin/lightningd --conf=/etc/__APP__/lightningd.conf
 Restart=on-failure
 RestartSec=5

@@ -17,12 +17,45 @@ bitcoin_config_dir="/etc/$bitcoin_app"
 bitcoin_config_file="$bitcoin_config_dir/bitcoin.conf"
 bitcoin_cln_credential_file="$bitcoin_config_dir/core-lightning.rpc"
 bitcoin_data_dir="$(ynh_app_setting_get --app="$bitcoin_app" --key=data_dir 2>/dev/null || true)"
-bitcoin_cli="$(ynh_app_setting_get --app="$bitcoin_app" --key=install_dir 2>/dev/null || true)/bitcoin-31.1/bin/bitcoin-cli"
+bitcoin_install_dir="$(ynh_app_setting_get --app="$bitcoin_app" --key=install_dir 2>/dev/null || true)"
+bitcoin_cli=""
+pay_plugin="$install_dir/libexec/c-lightning/plugins/pay"
 
 ynh_cln_setting() {
 	local key="$1" default="$2" value
 	value="$(ynh_app_setting_get --app="$app" --key="$key" 2>/dev/null || true)"
 	printf '%s' "${value:-$default}"
+}
+
+# Resolve the Bitcoin Core CLI from the installed app's resource directory.
+# Do not encode the upstream Bitcoin version here: bitcoin-core_ynh may update
+# it independently of this package.
+ynh_cln_resolve_bitcoin_cli() {
+	local candidate found=""
+	[ -n "$bitcoin_install_dir" ] || ynh_die "Bitcoin Core install directory could not be discovered."
+	for candidate in "$bitcoin_install_dir"/bitcoin-*/bin/bitcoin-cli; do
+		[ -x "$candidate" ] || continue
+		[ -z "$found" ] || ynh_die "Multiple executable bitcoin-cli binaries were found below $bitcoin_install_dir; repair Bitcoin Core before continuing."
+		found="$candidate"
+	done
+	[ -n "$found" ] || ynh_die "No executable bitcoin-cli was found below $bitcoin_install_dir. Update or repair Bitcoin Core before continuing."
+	bitcoin_cli="$found"
+}
+
+ynh_cln_check_runtime_access() {
+	[ -x "$pay_plugin" ] || ynh_die "Core Lightning's pay plugin is missing or not executable at $pay_plugin."
+	if ! runuser -u "$app" -- test -x "$bitcoin_cli"; then
+		ynh_die "The Core Lightning service user cannot execute $bitcoin_cli. Check the bitcoin_core group membership and parent-directory permissions."
+	fi
+	if ! runuser -u "$app" -- test -x "$pay_plugin"; then
+		ynh_die "The Core Lightning service user cannot execute the pay plugin at $pay_plugin. Check package ownership and permissions."
+	fi
+}
+
+ynh_cln_check_bitcoin_rpc() {
+	if ! runuser -u "$app" -- "$bitcoin_cli" -conf="$bitcoin_config_file" -datadir="$bitcoin_data_dir" getblockchaininfo >/dev/null 2>&1; then
+		ynh_die "The Core Lightning service user cannot reach Bitcoin Core through $bitcoin_cli. Check Bitcoin Core readiness, RPC credentials, and bitcoin_core group permissions."
+	fi
 }
 
 # The p2p port resource is provisioned by YunoHost under the app setting
@@ -67,12 +100,15 @@ ynh_cln_require_bitcoin_app() {
 	fi
 	[ -r "$bitcoin_config_file" ] || ynh_die "Bitcoin Core was detected, but $bitcoin_config_file is not readable."
 	[ -n "$bitcoin_data_dir" ] || ynh_die "Bitcoin Core data directory could not be discovered."
-	[ -x "$bitcoin_cli" ] || ynh_die "Core Lightning's bcli plugin needs the bitcoin-cli binary, but $bitcoin_cli is not executable. bitcoin-core_ynh may have changed its install layout or version - update bitcoin_cli in _common.sh."
+	ynh_cln_resolve_bitcoin_cli
 	# bitcoin_core's install_dir is owned by its own dedicated system user
 	# with group-only access; lightningd runs as $app, so it needs to join
 	# that group to actually exec bitcoin-cli at runtime (the -x check
 	# above passes as root regardless, so it can't catch this on its own).
 	usermod -aG "$bitcoin_app" "$app" || ynh_die "Could not add $app to the $bitcoin_app group for bitcoin-cli access."
+	if [ -x "$lightningd_bin" ] && [ -x "$pay_plugin" ]; then
+		ynh_cln_check_runtime_access
+	fi
 }
 
 ynh_cln_read_bitcoin_rpc_credentials() {

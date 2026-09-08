@@ -4,6 +4,11 @@ The package intentionally does not ship a web wallet UI. Use `lightning-cli` ove
 
 The package does not open channels, choose peers, manage liquidity, or pay invoices. Those are operator and financial decisions.
 
+The package resolves `bitcoin-cli` from the installed Bitcoin Core resource
+directory instead of assuming a particular upstream version. The service is
+explicitly added to the `bitcoin_core` group, and lifecycle checks verify that
+the service user can execute both `bitcoin-cli` and the bundled `pay` plugin.
+
 Removal is deliberately conservative: the package checks `listfunds` and
 refuses to remove itself while local wallet or channel funds are reported.
 
