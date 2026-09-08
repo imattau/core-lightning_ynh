@@ -50,6 +50,11 @@ ynh_cln_require_bitcoin_app() {
 	[ -r "$bitcoin_config_file" ] || ynh_die "Bitcoin Core was detected, but $bitcoin_config_file is not readable."
 	[ -n "$bitcoin_data_dir" ] || ynh_die "Bitcoin Core data directory could not be discovered."
 	[ -x "$bitcoin_cli" ] || ynh_die "Core Lightning's bcli plugin needs the bitcoin-cli binary, but $bitcoin_cli is not executable. bitcoin-core_ynh may have changed its install layout or version - update bitcoin_cli in _common.sh."
+	# bitcoin_core's install_dir is owned by its own dedicated system user
+	# with group-only access; lightningd runs as $app, so it needs to join
+	# that group to actually exec bitcoin-cli at runtime (the -x check
+	# above passes as root regardless, so it can't catch this on its own).
+	usermod -aG "$bitcoin_app" "$app" || ynh_die "Could not add $app to the $bitcoin_app group for bitcoin-cli access."
 }
 
 ynh_cln_read_bitcoin_rpc_credentials() {

@@ -3,6 +3,9 @@ set -eu
 source /usr/share/yunohost/helpers
 source "$(dirname "$0")/_common.sh"
 
+ynh_script_progression "Checking Bitcoin Core backend..."
+ynh_cln_require_bitcoin_app
+
 ynh_script_progression "Restoring Core Lightning state..."
 ynh_systemctl --service="$service_name" --action=stop --timeout=300 || true
 mkdir -p "$config_dir" "$data_dir"
