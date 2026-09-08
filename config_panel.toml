@@ -53,7 +53,7 @@ services = ["__APP__"]
         bind = "grpc_port:__APP__"
         visible = "grpc_enabled"
 
-        [node.status]
+        [node.settings.status]
         ask.en = "Operational status"
         ask.fr = "État opérationnel"
         type = "alert"
