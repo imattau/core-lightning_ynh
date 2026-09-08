@@ -11,6 +11,7 @@ get__alias() {
 
 set__alias() {
 	ynh_app_setting_set --app="$app" --key=alias --value="$alias"
+	ynh_cln_require_bitcoin_app
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
 	ynh_systemctl --service="$service_name" --action=restart
@@ -26,6 +27,7 @@ set__p2p() {
 	esac
 	[ "$p2p" -ge 1 ] && [ "$p2p" -le 65535 ] || ynh_die "Lightning P2P port must be between 1 and 65535"
 	ynh_app_setting_set --app="$app" --key=p2p --value="$p2p"
+	ynh_cln_require_bitcoin_app
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
 	ynh_systemctl --service="$service_name" --action=restart
@@ -41,6 +43,7 @@ set__log_level() {
 		*) ynh_die "Unsupported Core Lightning log level: $log_level" ;;
 	esac
 	ynh_app_setting_set --app="$app" --key=log_level --value="$log_level"
+	ynh_cln_require_bitcoin_app
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
 	ynh_systemctl --service="$service_name" --action=restart
@@ -60,6 +63,7 @@ set__grpc_enabled() {
 		*) ynh_die "grpc_enabled must be true or false" ;;
 	esac
 	ynh_app_setting_set --app="$app" --key=grpc_enabled --value="$grpc_enabled"
+	ynh_cln_require_bitcoin_app
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
 	ynh_systemctl --service="$service_name" --action=restart
@@ -80,6 +84,7 @@ set__grpc_port() {
 	esac
 	[ "$grpc_port" -ge 1 ] && [ "$grpc_port" -le 65535 ] || ynh_die "gRPC port must be between 1 and 65535"
 	ynh_app_setting_set --app="$app" --key=grpc_port --value="$grpc_port"
+	ynh_cln_require_bitcoin_app
 	ynh_cln_read_bitcoin_rpc_credentials
 	ynh_cln_write_config
 	ynh_systemctl --service="$service_name" --action=restart
