@@ -47,7 +47,7 @@ ynh_cln_write_config() {
 		echo "# Managed by YunoHost package $app. Edit through the config panel when possible."
 		echo "network=$network"
 		echo "alias=$(ynh_cln_setting alias 'My YunoHost Lightning Node')"
-		echo "lightning-dir=$data_dir/bitcoin"
+		echo "lightning-dir=$data_dir"
 		echo "rpc-file=$data_dir/bitcoin/lightning-rpc"
 		echo "log-file=$data_dir/bitcoin/lightningd.log"
 		echo "log-level=$(ynh_cln_setting log_level info)"
@@ -75,9 +75,21 @@ ynh_cln_unpack() {
 }
 
 ynh_cln_rpc() {
-	"$lightning_cli" --lightning-dir="$data_dir/bitcoin" "$@"
+	"$lightning_cli" --lightning-dir="$data_dir" "$@"
 }
 
 ynh_cln_healthcheck() {
 	ynh_cln_rpc getinfo >/dev/null
+}
+
+ynh_cln_wait_for_rpc() {
+	local timeout="${1:-60}"
+	local attempt
+	for ((attempt = 1; attempt <= timeout; attempt++)); do
+		if ynh_cln_healthcheck >/dev/null 2>&1; then
+			return 0
+		fi
+		sleep 1
+	done
+	return 1
 }
