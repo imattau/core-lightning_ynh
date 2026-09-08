@@ -23,6 +23,12 @@ ynh_restore "/etc/systemd/system/$service_name.service"
 # ynh_restore doesn't guarantee the exact ownership/mode ynh_cln_write_config
 # originally set - lightningd (running as $app) must be able to read its own
 # config, so reassert it explicitly rather than trusting the restore verbatim.
+# This includes $config_dir itself: it was observed restored as root:root
+# 0400 (no execute/search bit at all), which blocks opening *any* file
+# inside it regardless of that file's own permissions - confirmed live via
+# `Opening and reading .../lightningd.conf: Permission denied` even though
+# the file itself was already correctly root:$app 0640.
+chmod 0755 "$config_dir"
 chown root:"$app" "$config_file"
 chmod 0640 "$config_file"
 chown -R "$app:$app" "$data_dir"
