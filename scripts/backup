@@ -4,17 +4,18 @@ source /usr/share/yunohost/helpers
 source "$(dirname "$0")/_common.sh"
 
 ynh_script_progression "Stopping Core Lightning before backup..."
-was_active=0
-systemctl is-active --quiet "$service_name" && was_active=1 || true
-if [ "$was_active" -eq 1 ]; then
-	ynh_systemctl --service="$service_name" --action=stop --timeout=300
-fi
+systemctl is-active --quiet "$service_name" && ynh_systemctl --service="$service_name" --action=stop --timeout=300 || true
 
 ynh_backup "$config_dir"
 ynh_backup "$data_dir"
 ynh_backup "/etc/systemd/system/$service_name.service"
 
-if [ "$was_active" -eq 1 ]; then
-	ynh_systemctl --service="$service_name" --action=start --log_path=systemd --timeout=60
-fi
+# Deliberately NOT restarting here: YunoHost archives the paths declared
+# above only after this script returns, so restarting first would let a
+# freshly-active lightningd rewrite $data_dir (sqlite3 db/journal, gossip
+# store) while the archive is still being built, racing the backup with a
+# live database and risking a torn/unreadable snapshot. Leaving the
+# service stopped through the whole backup window is the only way to
+# guarantee the archived state is actually static.
+ynh_print_warn "Core Lightning is stopped after this backup and will not restart automatically - start it manually (yunohost service start $service_name) once the backup archive is complete."
 ynh_print_info "This backup contains hsm_secret, channel state, and emergency.recover when present. It is not a guarantee of Lightning fund recovery; keep a separate secure key backup."
