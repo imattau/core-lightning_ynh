@@ -180,6 +180,10 @@ ynh_cln_dump_diagnostics() {
 	# opened) actually surfaces instead of leaving a silent gap.
 	ynh_print_warn "--- Core Lightning diagnostics (journalctl -u $service_name) ---"
 	journalctl -u "$service_name" --no-pager -n 100 --output=cat 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+	ynh_print_warn "--- Core Lightning diagnostics (config file/dir permissions) ---"
+	ls -la "$config_dir" 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+	stat "$config_file" 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
+	id "$app" 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
 	ynh_print_warn "--- Core Lightning diagnostics (lightningd.log tail) ---"
 	if [ -r "$data_dir/bitcoin/lightningd.log" ]; then
 		tail -n 60 "$data_dir/bitcoin/lightningd.log" 2>&1 | while IFS= read -r line; do ynh_print_warn "$line"; done
