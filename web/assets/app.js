@@ -296,15 +296,15 @@
     });
   }
 
-  function loadPeers() {
-    if (peerMessage) peerMessage.textContent = 'Loading discovered peers…';
+  function loadPeers(silent) {
+    if (peerMessage && !silent) peerMessage.textContent = 'Loading discovered peers…';
     fetch('api/v1/peers/discovered')
       .then(function (response) { if (!response.ok) throw new Error('Peer discovery unavailable'); return response.json(); })
-      .then(function (data) { renderPeers(data.peers || []); if (peerMessage) peerMessage.textContent = ''; })
+      .then(function (data) { renderPeers(data.peers || []); if (peerMessage && !silent) peerMessage.textContent = ''; })
       .catch(function (error) {
         if (peerSelect) peerSelect.innerHTML = '<option value="">No discovered peers — use manual ID</option>';
         if (peerList) peerList.innerHTML = '<p class="muted">' + error.message + '</p>';
-        if (peerMessage) peerMessage.textContent = '';
+        if (peerMessage && !silent) peerMessage.textContent = '';
       });
   }
 
@@ -319,7 +319,7 @@
         const connected = (data.connected || []).length;
         const attempted = (data.attempted || []).length;
         if (peerMessage) peerMessage.textContent = connected ? 'Connected to ' + connected + ' bootstrap peer' + (connected === 1 ? '' : 's') + '. Gossip will continue in the background.' : 'Tried ' + attempted + ' bootstrap peer' + (attempted === 1 ? '' : 's') + '; none accepted the connection. Try again shortly.';
-        setTimeout(loadPeers, 1000);
+        setTimeout(function () { loadPeers(true); }, 1000);
       })
       .catch(function (error) { if (peerMessage) peerMessage.textContent = error.message; })
       .finally(function () { bootstrapPeers.disabled = false; });
