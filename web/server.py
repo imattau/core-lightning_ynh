@@ -9,6 +9,9 @@ route and is never written to logs, URLs, or persistent browser storage.
 import json
 import os
 import re
+import random
+import socket
+import struct
 import subprocess
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -27,6 +30,8 @@ BITCOIN_CONFIG_FILE = os.environ.get("CLN_BITCOIN_CONFIG_FILE", "")
 BITCOIN_DATA_DIR = os.environ.get("CLN_BITCOIN_DATA_DIR", "")
 RPC_TIMEOUT = 15
 NODE_ID_RE = re.compile(r"^[0-9a-fA-F]{66}$")
+BOOTSTRAP_SEEDS = ("lseed.bitcoinstats.com", "nodes.lightning.directory", "soa.nodes.lightning.directory")
+BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 NODE_SETTINGS = {
     "alias": {"rpc": "alias", "kind": "string"},
     "announce_addr": {"rpc": "announce-addr", "kind": "string"},
@@ -79,6 +84,129 @@ def bitcoin_info():
         return json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError("Bitcoin Core returned invalid JSON") from exc
+
+
+def dns_name(packet, offset):
+    labels = []
+    original = offset
+    jumped = False
+    while True:
+        length = packet[offset]
+        if length == 0:
+            return ".".join(labels), offset + 1 if not jumped else original + 2
+        if length & 0xC0 == 0xC0:
+            pointer = ((length & 0x3F) << 8) | packet[offset + 1]
+            name, _ = dns_name(packet, pointer)
+            labels.append(name)
+            return ".".join(labels), original + 2
+        offset += 1
+        labels.append(packet[offset:offset + length].decode("ascii", "ignore"))
+        offset += length
+
+
+def dns_query_srv(seed):
+    query_name = "n8.a2." + seed
+    transaction = random.randrange(0, 65536)
+    labels = b"".join(bytes([len(label)]) + label.encode("ascii") for label in query_name.split(".")) + b"\0"
+    packet = struct.pack("!HHHHHH", transaction, 0x0100, 1, 0, 0, 0) + labels + struct.pack("!HH", 33, 1)
+    nameservers = []
+    try:
+        with open("/etc/resolv.conf", encoding="ascii") as resolv:
+            nameservers = [line.split()[1] for line in resolv if line.startswith("nameserver ")]
+    except OSError:
+        pass
+    for nameserver in nameservers[:3]:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(3)
+                sock.sendto(packet, (nameserver, 53))
+                response, _ = sock.recvfrom(8192)
+            if len(response) < 12 or struct.unpack("!H", response[:2])[0] != transaction:
+                continue
+            flags, questions, answers, authority, additional = struct.unpack("!HHHHH", response[2:12])
+            if not flags & 0x8000 or flags & 0x000F:
+                continue
+            offset = 12
+            for _ in range(questions):
+                _, offset = dns_name(response, offset)
+                offset += 4
+            records = []
+            for _ in range(answers + authority + additional):
+                _, offset = dns_name(response, offset)
+                record_type, record_class, _, data_length = struct.unpack("!HHIH", response[offset:offset + 10])
+                offset += 10
+                data_offset = offset
+                offset += data_length
+                if record_type != 33 or record_class != 1 or data_length < 7:
+                    continue
+                _, cursor = dns_name(response, data_offset + 6)
+                port = struct.unpack("!H", response[data_offset + 4:data_offset + 6])[0]
+                target, _ = dns_name(response, data_offset + 6)
+                records.append((target.rstrip("."), port))
+            return records
+        except (OSError, struct.error, UnicodeError):
+            continue
+    return []
+
+
+def bech32_node_id(value):
+    separator = value.rfind("1")
+    if separator <= 0:
+        return None
+    try:
+        data = [BECH32_CHARSET.index(char) for char in value[separator + 1:].lower()]
+    except ValueError:
+        return None
+    if len(data) < 7:
+        return None
+    payload = data[:-6]
+    accumulator = 0
+    bits = 0
+    output = bytearray()
+    for item in payload:
+        accumulator = (accumulator << 5) | item
+        bits += 5
+        while bits >= 8:
+            bits -= 8
+            output.append((accumulator >> bits) & 0xFF)
+    if bits >= 5 or ((accumulator << (8 - bits)) & 0xFF):
+        return None
+    node_id = output.hex()
+    return node_id if NODE_ID_RE.fullmatch(node_id) else None
+
+
+def bootstrap_peers():
+    candidates = []
+    for seed in BOOTSTRAP_SEEDS:
+        for target, port in dns_query_srv(seed):
+            node_id = bech32_node_id(target.split(".", 1)[0])
+            if not node_id or not 1 <= port <= 65535:
+                continue
+            try:
+                addresses = socket.getaddrinfo(target, port, socket.AF_INET, socket.SOCK_STREAM)
+            except OSError:
+                continue
+            for address in addresses:
+                candidates.append((node_id, address[4][0], port))
+    random.shuffle(candidates)
+    unique = []
+    seen = set()
+    for candidate in candidates:
+        if candidate[0] in seen:
+            continue
+        seen.add(candidate[0])
+        unique.append(candidate)
+    attempted = []
+    connected = []
+    failures = []
+    for node_id, host, port in unique[:3]:
+        attempted.append(node_id)
+        try:
+            result = rpc("connect", node_id, host, str(port))
+            connected.append({"id": node_id, "host": host, "port": port, "result": result})
+        except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
+            failures.append({"id": node_id, "error": str(exc)})
+    return {"attempted": attempted, "connected": connected, "failures": failures}
 
 
 def recovery_secret():
@@ -318,7 +446,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):  # noqa: N802 - BaseHTTPRequestHandler API
         path = urlparse(self.path).path
-        if path not in ("/api/v1/wallet/address", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal", "/api/v1/node/settings"):
+        if path not in ("/api/v1/wallet/address", "/api/v1/peers/bootstrap", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal", "/api/v1/node/settings"):
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
             return
         try:
@@ -337,6 +465,9 @@ class Handler(BaseHTTPRequestHandler):
                     validated = validate_node_setting(key, value)
                     updated[key] = rpc("setconfig", NODE_SETTINGS[key]["rpc"], validated)
                 self.send_json(HTTPStatus.OK, {"updated": list(updated), "settings": node_settings()})
+                return
+            if path == "/api/v1/peers/bootstrap":
+                self.send_json(HTTPStatus.OK, bootstrap_peers())
                 return
             if path == "/api/v1/wallet/address":
                 address = rpc("newaddr", "bech32")

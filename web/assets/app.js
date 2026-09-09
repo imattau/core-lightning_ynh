@@ -310,6 +310,20 @@
 
   const refreshPeers = document.querySelector('#refresh-peers');
   if (refreshPeers) refreshPeers.addEventListener('click', loadPeers);
+  const bootstrapPeers = document.querySelector('#bootstrap-peers');
+  if (bootstrapPeers) bootstrapPeers.addEventListener('click', function () {
+    bootstrapPeers.disabled = true;
+    if (peerMessage) peerMessage.textContent = 'Finding public bootstrap peers…';
+    post('api/v1/peers/bootstrap', {})
+      .then(function (data) {
+        const connected = (data.connected || []).length;
+        const attempted = (data.attempted || []).length;
+        if (peerMessage) peerMessage.textContent = connected ? 'Connected to ' + connected + ' bootstrap peer' + (connected === 1 ? '' : 's') + '. Gossip will continue in the background.' : 'Tried ' + attempted + ' bootstrap peer' + (attempted === 1 ? '' : 's') + '; none accepted the connection. Try again shortly.';
+        setTimeout(loadPeers, 1000);
+      })
+      .catch(function (error) { if (peerMessage) peerMessage.textContent = error.message; })
+      .finally(function () { bootstrapPeers.disabled = false; });
+  });
   loadPeers();
 
   const settingsState = document.querySelector('#settings-state');
