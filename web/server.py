@@ -31,21 +31,6 @@ BITCOIN_DATA_DIR = os.environ.get("CLN_BITCOIN_DATA_DIR", "")
 RPC_TIMEOUT = 15
 NODE_ID_RE = re.compile(r"^[0-9a-fA-F]{66}$")
 BOOTSTRAP_SEEDS = ("lseed.bitcoinstats.com", "nodes.lightning.directory", "soa.nodes.lightning.directory")
-# Fallbacks mirror the public candidates in CLN's contrib/bootstrap-node.sh.
-# DNS discovery is preferred; these are only used when the local resolver
-# cannot return BOLT #10 records.
-BOOTSTRAP_FALLBACKS = (
-    ("024b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605", "128.199.202.168", 9735),
-    ("0204a2b95b4c208383d7f02e741a8bfd5b5b7e8bea8d1543b1255da8342d9f2c6b", "172.81.178.189", 9735),
-    ("020ca546d600037181b7cbcd094818100d780d32fd9f210e14390e0d10b7ec71fb", "187.65.218.133", 9735),
-    ("0216006237022044d9bdb73ca51af267c5f67cf76095b4c6275f1162eb422fed68", "108.7.50.215", 9735),
-    ("0219fc8bad855d3c861166a89d637950242230fd3d475bb4a2d1da8c89b97beb0a", "78.94.255.174", 9735),
-    ("024b00cf3368dbff39daa6de5638cd877b96227066e1e0d31b10183daa63ac325d", "94.156.174.22", 9735),
-    ("0260fab633066ed7b1d9b9b8a0fac87e1579d1709e874d28a0d171a1f5c43bb877", "54.245.57.153", 9735),
-    ("027cb5b394c5330467081901dba14d48a4ac0f10012e5791e725a65d326405a82e", "82.40.164.125", 9735),
-    ("02827a7ba367d10a29f0a178be878f737292889d1926b40301780d7e1402a90a72", "18.223.138.245", 9735),
-    ("02866bd9513e4e82f250c9b8a0b83cabc9be3c4824f7016bd160859d0fad3d8920", "153.126.136.98", 9735),
-)
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 NODE_SETTINGS = {
     "alias": {"rpc": "alias", "kind": "string"},
@@ -120,47 +105,47 @@ def dns_name(packet, offset):
 
 
 def dns_query_srv(seed):
-    query_name = "n8.a2." + seed
-    transaction = random.randrange(0, 65536)
-    labels = b"".join(bytes([len(label)]) + label.encode("ascii") for label in query_name.split(".")) + b"\0"
-    packet = struct.pack("!HHHHHH", transaction, 0x0100, 1, 0, 0, 0) + labels + struct.pack("!HH", 33, 1)
     nameservers = []
     try:
         with open("/etc/resolv.conf", encoding="ascii") as resolv:
             nameservers = [line.split()[1] for line in resolv if line.startswith("nameserver ")]
     except OSError:
         pass
-    for nameserver in nameservers[:3]:
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                sock.settimeout(3)
-                sock.sendto(packet, (nameserver, 53))
-                response, _ = sock.recvfrom(8192)
-            if len(response) < 12 or struct.unpack("!H", response[:2])[0] != transaction:
-                continue
-            flags, questions, answers, authority, additional = struct.unpack("!HHHHH", response[2:12])
-            if not flags & 0x8000 or flags & 0x000F:
-                continue
-            offset = 12
-            for _ in range(questions):
-                _, offset = dns_name(response, offset)
-                offset += 4
-            records = []
-            for _ in range(answers + authority + additional):
-                _, offset = dns_name(response, offset)
-                record_type, record_class, _, data_length = struct.unpack("!HHIH", response[offset:offset + 10])
-                offset += 10
-                data_offset = offset
-                offset += data_length
-                if record_type != 33 or record_class != 1 or data_length < 7:
+    for query_name in ("a2." + seed, "n25.a2." + seed, "_nodes._tcp." + seed, seed):
+        transaction = random.randrange(0, 65536)
+        labels = b"".join(bytes([len(label)]) + label.encode("ascii") for label in query_name.split(".")) + b"\0"
+        packet = struct.pack("!HHHHHH", transaction, 0x0100, 1, 0, 0, 0) + labels + struct.pack("!HH", 33, 1)
+        for nameserver in nameservers[:3]:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                    sock.settimeout(3)
+                    sock.sendto(packet, (nameserver, 53))
+                    response, _ = sock.recvfrom(8192)
+                if len(response) < 12 or struct.unpack("!H", response[:2])[0] != transaction:
                     continue
-                _, cursor = dns_name(response, data_offset + 6)
-                port = struct.unpack("!H", response[data_offset + 4:data_offset + 6])[0]
-                target, _ = dns_name(response, data_offset + 6)
-                records.append((target.rstrip("."), port))
-            return records
-        except (OSError, struct.error, UnicodeError):
-            continue
+                flags, questions, answers, authority, additional = struct.unpack("!HHHHH", response[2:12])
+                if not flags & 0x8000 or flags & 0x000F:
+                    continue
+                offset = 12
+                for _ in range(questions):
+                    _, offset = dns_name(response, offset)
+                    offset += 4
+                records = []
+                for _ in range(answers + authority + additional):
+                    _, offset = dns_name(response, offset)
+                    record_type, record_class, _, data_length = struct.unpack("!HHIH", response[offset:offset + 10])
+                    offset += 10
+                    data_offset = offset
+                    offset += data_length
+                    if record_type != 33 or record_class != 1 or data_length < 7:
+                        continue
+                    port = struct.unpack("!H", response[data_offset + 4:data_offset + 6])[0]
+                    target, _ = dns_name(response, data_offset + 6)
+                    records.append((target.rstrip("."), port))
+                if records:
+                    return records
+            except (OSError, struct.error, UnicodeError):
+                continue
     return []
 
 
@@ -198,13 +183,11 @@ def bootstrap_peers():
             if not node_id or not 1 <= port <= 65535:
                 continue
             try:
-                addresses = socket.getaddrinfo(target, port, socket.AF_INET, socket.SOCK_STREAM)
+                addresses = socket.getaddrinfo(target, port, 0, socket.SOCK_STREAM)
             except OSError:
                 continue
             for address in addresses:
-                candidates.append((node_id, address[4][0], port))
-    if not candidates:
-        candidates.extend(BOOTSTRAP_FALLBACKS)
+                candidates.append((node_id, address[4][0], address[4][1]))
     random.shuffle(candidates)
     unique = []
     seen = set()
@@ -223,7 +206,7 @@ def bootstrap_peers():
             connected.append({"id": node_id, "host": host, "port": port, "result": result})
         except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
             failures.append({"id": node_id, "error": str(exc)})
-    return {"attempted": attempted, "connected": connected, "failures": failures}
+    return {"attempted": attempted, "connected": connected, "failures": failures, "discovered": len(unique)}
 
 
 def recovery_secret():

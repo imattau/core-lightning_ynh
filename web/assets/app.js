@@ -318,7 +318,13 @@
       .then(function (data) {
         const connected = (data.connected || []).length;
         const attempted = (data.attempted || []).length;
-        if (peerMessage) peerMessage.textContent = connected ? 'Connected to ' + connected + ' bootstrap peer' + (connected === 1 ? '' : 's') + '. Gossip will continue in the background.' : 'Tried ' + attempted + ' bootstrap peer' + (attempted === 1 ? '' : 's') + '; none accepted the connection. Try again shortly.';
+        if (peerMessage) {
+          peerMessage.textContent = connected
+            ? 'Connected to ' + connected + ' bootstrap peer' + (connected === 1 ? '' : 's') + '. Gossip will continue in the background.'
+            : data.discovered
+              ? 'Tried ' + attempted + ' freshly discovered peer' + (attempted === 1 ? '' : 's') + '; none accepted the connection. Try again shortly.'
+              : 'No fresh public peers were returned by the DNS seeds. Check DNS or connect a peer manually.';
+        }
         setTimeout(function () { loadPeers(true); }, 1000);
       })
       .catch(function (error) { if (peerMessage) peerMessage.textContent = error.message; })
