@@ -10,6 +10,8 @@ if systemctl is-active --quiet "$service_name"; then
 	fi
 fi
 
+ynh_remove_nginx_config
+
 ynh_script_progression "Stopping Core Lightning web interface..."
 ynh_systemctl --service="$web_service_name" --action=stop || true
 yunohost service remove "$web_service_name" || true

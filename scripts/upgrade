@@ -28,4 +28,5 @@ ynh_script_progression "Updating Core Lightning web interface..."
 yunohost service add "$web_service_name" --description="Core Lightning web interface" --log=systemd || true
 ynh_cln_install_web_assets
 ynh_cln_configure_web_service
+ynh_add_nginx_config
 ynh_systemctl --service="$web_service_name" --action=restart --log_path=systemd --timeout=60
