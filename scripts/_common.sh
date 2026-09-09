@@ -264,7 +264,6 @@ ynh_cln_fix_grpc_cert_perms() {
 	if id alby_hub >/dev/null 2>&1; then
 		usermod --append --groups="$app" alby_hub
 	fi
-	[ "$(ynh_cln_setting grpc_enabled false)" = "true" ] || return 0
 	local cert_dir="$data_dir/bitcoin"
 	local cert
 	chmod 0710 "$data_dir" "$cert_dir" 2>/dev/null || true
