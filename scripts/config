@@ -97,6 +97,7 @@ set__min_capacity_sat() {
 
 set__min_emergency_sat() {
 	case "$min_emergency_sat" in ''|*[!0-9]*) ynh_die "Emergency reserve must be a non-negative integer" ;; esac
+	[ "$min_emergency_sat" -ge 547 ] || ynh_die "Emergency reserve must be at least 547 satoshis (above the dust limit)"
 	[ "$min_emergency_sat" -le 2100000000 ] || ynh_die "Emergency reserve must be no more than 2100000000 satoshis"
 	ynh_app_setting_set --app="$app" --key=min_emergency_sat --value="$min_emergency_sat"
 	ynh_cln_require_bitcoin_app; ynh_cln_read_bitcoin_rpc_credentials; ynh_cln_write_config

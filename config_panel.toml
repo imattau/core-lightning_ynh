@@ -80,10 +80,10 @@ services = ["__APP__"]
         ask.en = "Emergency reserve (satoshis)"
         ask.fr = "Réserve d'urgence (satoshis)"
         type = "number"
-        min = 0
+        min = 547
         default = 25000
         bind = "null"
-        help.en = "Funds kept available for closing anchor channels. Lowering this is only recommended for testing and requires a Core Lightning restart."
+        help.en = "Funds kept available for closing anchor channels. The minimum is 547 sats because CLN requires the reserve to be above the 546-sat dust limit. Lowering this is only recommended for testing and requires a Core Lightning restart."
 
         [node.settings.grpc_enabled]
         ask.en = "Enable gRPC (for local apps like Alby Hub)"

@@ -209,6 +209,7 @@ ynh_cln_write_config() {
 	case "$fee_per_sat" in ''|*[!0-9]*) ynh_die "Proportional fee must be a non-negative integer" ;; esac
 	case "$min_capacity_sat" in ''|*[!0-9]*) ynh_die "Minimum channel capacity must be a non-negative integer" ;; esac
 	case "$min_emergency_sat" in ''|*[!0-9]*) ynh_die "Emergency reserve must be a non-negative integer" ;; esac
+	[ "$min_emergency_sat" -ge 547 ] || ynh_die "Emergency reserve must be at least 547 satoshis (above the dust limit)"
 	[ "$min_emergency_sat" -le 2100000000 ] || ynh_die "Emergency reserve must be no more than 2100000000 satoshis"
 	mkdir -p "$config_dir"
 	{
