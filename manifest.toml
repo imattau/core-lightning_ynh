@@ -5,7 +5,7 @@ id = "core_lightning"
 name = "Core Lightning"
 description.en = "Self-hosted Lightning node backed by a local Bitcoin Core node"
 description.fr = "Nœud Lightning auto-hébergé utilisant un nœud Bitcoin Core local"
-version = "26.06.7~ynh65"
+version = "26.06.7~ynh66"
 maintainers = ["core-lightning_ynh contributors"]
 
 [upstream]

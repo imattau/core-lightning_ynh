@@ -207,15 +207,65 @@
     return Number(value) || 0;
   }
 
-  fetch('api/v1/wallet')
-    .then(function (response) { if (!response.ok) throw new Error('offline'); return response.json(); })
-    .then(function (data) {
+  function renderChannels(channels) {
+    const list = document.querySelector('#channel-list');
+    const summary = document.querySelector('#channel-summary');
+    const summaryTitle = summary && summary.querySelector('h3');
+    const summaryText = summary && summary.querySelector('p');
+    if (summaryTitle && summaryText) {
+      if (!channels.length) {
+        summaryTitle.textContent = 'No channels yet';
+        summaryText.textContent = 'Connect a peer from the Peers page, then return here to open a channel.';
+      } else {
+        const capacity = channels.reduce(function (sum, channel) { return sum + msatValue(channel.amount_msat); }, 0) / 1000;
+        const local = channels.reduce(function (sum, channel) { return sum + msatValue(channel.our_amount_msat); }, 0) / 1000;
+        summaryTitle.textContent = channels.length + ' channel' + (channels.length === 1 ? '' : 's');
+        summaryText.textContent = Math.floor(capacity).toLocaleString() + ' sats capacity · ' + Math.floor(local).toLocaleString() + ' sats local balance';
+      }
+    }
+    if (!list) return;
+    list.innerHTML = '';
+    if (!channels.length) {
+      list.innerHTML = '<p class="muted">No channels yet. Open one above to see it here.</p>';
+      return;
+    }
+    channels.forEach(function (channel) {
+      const capacity = msatValue(channel.amount_msat) / 1000;
+      const local = msatValue(channel.our_amount_msat) / 1000;
+      const row = document.createElement('div');
+      row.className = 'channel-row';
+      const details = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = channel.peer_id || 'Unknown peer';
+      const meta = document.createElement('small');
+      meta.textContent = (channel.state || 'Unknown state') + (channel.short_channel_id ? ' · ' + channel.short_channel_id : '');
+      details.appendChild(title);
+      details.appendChild(meta);
+      const amounts = document.createElement('div');
+      amounts.className = 'channel-amounts';
+      const capacityText = document.createElement('strong');
+      capacityText.textContent = Math.floor(capacity).toLocaleString() + ' sats';
+      const localText = document.createElement('small');
+      localText.textContent = 'local ' + Math.floor(local).toLocaleString() + ' sats';
+      amounts.appendChild(capacityText);
+      amounts.appendChild(localText);
+      row.appendChild(details);
+      row.appendChild(amounts);
+      list.appendChild(row);
+    });
+  }
+
+  function loadWallet() {
+    return fetch('api/v1/wallet')
+      .then(function (response) { if (!response.ok) throw new Error('offline'); return response.json(); })
+      .then(function (data) {
       const outputs = data.outputs || [];
       const channels = data.channels || [];
       const onchain = Number(data.onchain_confirmed_msat || 0) / 1000;
       const capacity = channels.reduce(function (sum, channel) { return sum + msatValue(channel.amount_msat); }, 0) / 1000;
       const local = channels.reduce(function (sum, channel) { return sum + msatValue(channel.our_amount_msat); }, 0) / 1000;
       const total = Math.floor(onchain + local);
+      renderChannels(channels);
       const onchainElement = document.querySelector('#onchain-balance');
       const capacityElement = document.querySelector('#channel-capacity');
       const totalElement = document.querySelector('#total-balance');
@@ -223,8 +273,11 @@
       if (capacityElement) capacityElement.textContent = Math.floor(capacity).toLocaleString();
       if (totalElement) totalElement.textContent = total.toLocaleString();
       if (walletState && outputs.length) walletState.textContent = 'Wallet ready';
-    })
-    .catch(function () { /* Status already communicates that CLN is offline. */ });
+      return data;
+      });
+  }
+
+  loadWallet().catch(function () { /* Status already communicates that CLN is offline. */ });
 
   const peerSelect = document.querySelector('#peer-select');
   const channelPeer = document.querySelector('#channel-peer-id');
@@ -305,7 +358,10 @@
       openChannel.disabled = true;
       if (channelMessage) channelMessage.textContent = 'Submitting channel funding request…';
       post('api/v1/channels/open', payload)
-        .then(function (data) { if (channelMessage) channelMessage.textContent = 'Channel request accepted: ' + (data.channel_id || 'pending confirmation.'); })
+        .then(function (data) {
+          if (channelMessage) channelMessage.textContent = 'Channel request accepted: ' + (data.channel_id || 'pending confirmation.');
+          return loadWallet();
+        })
         .catch(function (error) { if (channelMessage) channelMessage.textContent = error.message; })
         .finally(function () { openChannel.disabled = false; });
     } catch (error) { if (channelMessage) channelMessage.textContent = error.message; }
