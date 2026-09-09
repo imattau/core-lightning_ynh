@@ -250,6 +250,26 @@ def validate_peer_id(value):
     return value
 
 
+def peer_endpoint(value):
+    if not isinstance(value, str):
+        raise RuntimeError("Peer node ID must be 66 hexadecimal characters")
+    value = value.strip()
+    peer_id = value
+    endpoint_host = None
+    endpoint_port = None
+    if "@" in value:
+        peer_id, endpoint = value.rsplit("@", 1)
+        if endpoint.startswith("[") and "]" in endpoint:
+            endpoint_host, remainder = endpoint[1:].split("]", 1)
+            if remainder.startswith(":"):
+                endpoint_port = remainder[1:]
+        elif endpoint.count(":") == 1:
+            endpoint_host, endpoint_port = endpoint.rsplit(":", 1)
+        else:
+            endpoint_host = endpoint
+    return validate_peer_id(peer_id), endpoint_host, endpoint_port
+
+
 def validate_channel_amount(value):
     if isinstance(value, bool):
         raise RuntimeError("Channel amount must be an integer")
@@ -474,11 +494,17 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.OK, address)
                 return
 
-            peer_id = validate_peer_id(payload.get("peer_id"))
+            peer_id, endpoint_host, endpoint_port = peer_endpoint(payload.get("peer_id"))
             if path == "/api/v1/peers/connect":
                 host = payload.get("host")
                 port = payload.get("port")
+                if host is None:
+                    host = endpoint_host
+                if port is None:
+                    port = endpoint_port
                 if host is not None:
+                    if port is None:
+                        port = 9735
                     if not isinstance(host, str) or not host or any(char.isspace() for char in host):
                         raise RuntimeError("Peer host must be a non-empty value without whitespace")
                     try:
