@@ -118,7 +118,6 @@ services = ["__APP__"]
         ask.fr = "Phrase de récupération du portefeuille"
         type = "markdown"
         readonly = true
-        redact = true
         bind = "null"
         visible = "reveal_recovery"
 
