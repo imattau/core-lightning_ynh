@@ -16,7 +16,7 @@ services = ["__APP__"]
         ask.en = "Node alias"
         ask.fr = "Alias du nœud"
         type = "string"
-        bind = "alias:__APP__"
+        bind = "null"
 
         [node.settings.p2p]
         ask.en = "Lightning P2P port"
@@ -25,7 +25,7 @@ services = ["__APP__"]
         min = 1
         max = 65535
         default = 9735
-        bind = "p2p:__APP__"
+        bind = "null"
 
         [node.settings.log_level]
         ask.en = "Log level"
@@ -33,14 +33,14 @@ services = ["__APP__"]
         type = "select"
         choices = ["info", "debug", "io"]
         default = "info"
-        bind = "log_level:__APP__"
+        bind = "null"
 
         [node.settings.announce_addr]
         ask.en = "Public announce address (optional)"
         ask.fr = "Adresse publique annoncée (optionnel)"
         type = "string"
         optional = true
-        bind = "announce_addr:__APP__"
+        bind = "null"
         help.en = "Host:port or Tor address announced to peers. Leave empty to use Core Lightning's automatic address discovery."
 
         [node.settings.rgb]
@@ -48,7 +48,7 @@ services = ["__APP__"]
         ask.fr = "Couleur du nœud (optionnel)"
         type = "string"
         optional = true
-        bind = "rgb:__APP__"
+        bind = "null"
         help.en = "Exactly six hexadecimal characters, for example FFA500."
 
         [node.settings.fee_base]
@@ -57,7 +57,7 @@ services = ["__APP__"]
         type = "number"
         min = 0
         default = 1000
-        bind = "fee_base:__APP__"
+        bind = "null"
 
         [node.settings.fee_per_sat]
         ask.en = "Routing proportional fee (millionths)"
@@ -65,7 +65,7 @@ services = ["__APP__"]
         type = "number"
         min = 0
         default = 10
-        bind = "fee_per_sat:__APP__"
+        bind = "null"
 
         [node.settings.min_capacity_sat]
         ask.en = "Minimum channel capacity (satoshis)"
@@ -73,7 +73,7 @@ services = ["__APP__"]
         type = "number"
         min = 0
         default = 10000
-        bind = "min_capacity_sat:__APP__"
+        bind = "null"
         help.en = "Reject incoming channels whose effective capacity is below this value."
 
         [node.settings.min_emergency_sat]
@@ -82,7 +82,7 @@ services = ["__APP__"]
         type = "number"
         min = 0
         default = 25000
-        bind = "min_emergency_sat:__APP__"
+        bind = "null"
         help.en = "Funds kept available for closing anchor channels. Lowering this is only recommended for testing and requires a Core Lightning restart."
 
         [node.settings.grpc_enabled]
@@ -90,7 +90,7 @@ services = ["__APP__"]
         ask.fr = "Activer gRPC (pour les applications locales comme Alby Hub)"
         type = "boolean"
         default = false
-        bind = "grpc_enabled:__APP__"
+        bind = "null"
         help.en = "Exposes a localhost-only, certificate-authenticated gRPC endpoint that other apps on this server can use as a Lightning backend. Never opened to the internet."
 
         [node.settings.grpc_port]
@@ -100,7 +100,7 @@ services = ["__APP__"]
         min = 1
         max = 65535
         default = 9736
-        bind = "grpc_port:__APP__"
+        bind = "null"
         visible = "grpc_enabled"
 
         [node.settings.status]
@@ -119,7 +119,7 @@ services = ["__APP__"]
         ask.fr = "Je comprends que cela affichera la phrase de récupération du portefeuille"
         type = "boolean"
         default = false
-        bind = "reveal_recovery:__APP__"
+        # Stored in settings.yml; no custom handler is needed for the acknowledgement.
         help.en = "Enable this to display the phrase in this panel. Only this acknowledgement is stored; the phrase is never stored by the package."
 
         [node.recovery.recovery_mnemonic]
@@ -255,4 +255,4 @@ services = ["__APP__"]
         ask.fr = "Adresse de dépôt actuelle"
         type = "string"
         readonly = true
-        bind = "deposit_address:__APP__"
+        # Stored in settings.yml by the generate action.
