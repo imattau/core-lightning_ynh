@@ -121,7 +121,7 @@ services = ["__APP__"]
         ask.en = "Peer node ID"
         ask.fr = "Identifiant du pair"
         type = "string"
-        optional = false
+        optional = true
         bind = "null"
         pattern.regexp = '^[0-9A-Fa-f]{66}$'
         pattern.error.en = "Enter a 66-character hexadecimal node ID."
@@ -130,7 +130,7 @@ services = ["__APP__"]
         ask.en = "Peer host or IP address"
         ask.fr = "Hôte ou adresse IP du pair"
         type = "string"
-        optional = false
+        optional = true
         bind = "null"
         help.en = "The peer's reachable host name or IP address."
 
@@ -149,7 +149,7 @@ services = ["__APP__"]
         type = "number"
         min = 546
         max = 16777215
-        optional = false
+        optional = true
         bind = "null"
         help.en = "Taken from the Core Lightning on-chain wallet, plus the transaction fee."
 
