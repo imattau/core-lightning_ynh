@@ -15,10 +15,15 @@ base/proportional fees, minimum channel capacity, and gRPC. Fee values are
 defaults for new channels; use Core Lightning's per-channel RPC commands when
 changing an existing channel policy.
 
-The panel does not accept or store a recovery phrase. CLN's mnemonic is the
-node root secret, not a mutable setting. Export it with
+The panel does not accept or store a recovery phrase as a setting. CLN's
+mnemonic is the node root secret, not a mutable setting. Export it with
 `lightning-hsmtool getsecret`, and protect `hsm_secret`, `emergency.recover`,
 and the latest database according to `doc/BACKUP.md`.
+
+For convenience, the panel has an explicit **Show recovery mnemonic** action.
+It prints the mnemonic only in that operation's output; use it deliberately,
+record the phrase offline, and clear the output immediately. The action never
+writes the phrase to YunoHost app settings or `lightningd.conf`.
 
 Removal is deliberately conservative: the package checks `listfunds` and
 refuses to remove itself while local wallet or channel funds are reported.

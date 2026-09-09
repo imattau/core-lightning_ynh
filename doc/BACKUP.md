@@ -13,5 +13,6 @@ The package stops `lightningd` before backup and **does not restart it automatic
 Secure key backups must be kept separately from ordinary YunoHost backups. Anyone who obtains `hsm_secret` may be able to steal funds. A YunoHost backup is not a guarantee of Lightning fund recovery.
 
 The config panel reports only whether expected backup files are present; it
-never displays their contents or stores the mnemonic. Export the readable
-mnemonic with `lightning-hsmtool getsecret` and keep it offline.
+does not store the mnemonic. Use its explicit recovery-mnemonic action, or
+export it with `lightning-hsmtool getsecret`, and keep it offline. Clear the
+operation output immediately after recording it.

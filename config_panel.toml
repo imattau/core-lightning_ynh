@@ -76,6 +76,15 @@ services = ["__APP__"]
         bind = "min_capacity_sat:__APP__"
         help.en = "Reject incoming channels whose effective capacity is below this value."
 
+        [node.settings.show_recovery_mnemonic]
+        ask.en = "Show recovery mnemonic"
+        ask.fr = "Afficher la phrase de récupération"
+        type = "button"
+        style = "warning"
+        icon = "key"
+        bind = "null"
+        help.en = "Explicitly reveals the CLN wallet mnemonic in the operation output. Record it offline and clear the output immediately; never share or store it in YunoHost settings."
+
         [node.settings.grpc_enabled]
         ask.en = "Enable gRPC (for local apps like Alby Hub)"
         ask.fr = "Activer gRPC (pour les applications locales comme Alby Hub)"
