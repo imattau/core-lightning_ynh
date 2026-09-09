@@ -58,7 +58,6 @@
       showView(button.getAttribute('data-target'));
     });
   });
-  routeFromHash();
 
   const address = document.querySelector('#deposit-address');
   const generate = document.querySelector('#generate-address');
@@ -328,4 +327,8 @@
   const reloadSettingsButton = document.querySelector('#reload-settings');
   if (saveSettingsButton) saveSettingsButton.addEventListener('click', saveSettings);
   if (reloadSettingsButton) reloadSettingsButton.addEventListener('click', loadSettings);
+  // Apply the initial hash only after all view-specific loaders and controls
+  // have been initialized. This matters when a user opens /#settings or
+  // /#peers directly rather than arriving from Home.
+  routeFromHash();
 })();
