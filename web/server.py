@@ -39,7 +39,6 @@ NODE_SETTINGS = {
     "fee_base": {"rpc": "fee-base", "kind": "integer"},
     "fee_per_sat": {"rpc": "fee-per-satoshi", "kind": "integer"},
     "min_capacity_sat": {"rpc": "min-capacity-sat", "kind": "integer"},
-    "min_emergency_sat": {"rpc": "min-emergency-msat", "kind": "sat_msat"},
     "log_level": {"rpc": "log-level", "kind": "log_level"},
 }
 
@@ -315,16 +314,6 @@ def validate_node_setting(key, value):
         if value not in ("info", "debug", "io"):
             raise RuntimeError("Log level must be info, debug, or io")
         return value
-    if kind == "sat_msat":
-        if isinstance(value, bool):
-            raise RuntimeError("The emergency reserve must be an integer number of satoshis")
-        try:
-            number = int(value)
-        except (TypeError, ValueError) as exc:
-            raise RuntimeError("The emergency reserve must be an integer number of satoshis") from exc
-        if number < 0 or number > 2100000000:
-            raise RuntimeError("The emergency reserve must be between 0 and 2100000000 satoshis")
-        return str(number * 1000) + "msat"
     if isinstance(value, bool):
         raise RuntimeError("Node amount settings must be integers")
     try:
@@ -368,11 +357,10 @@ def node_settings():
     for key, setting in NODE_SETTINGS.items():
         value = typed_value(values.get(setting["rpc"]))
         if value is not None:
-            if setting["kind"] == "sat_msat":
-                value = sats_from_msat(value)
-                if value is None:
-                    continue
             result[key] = value
+    emergency = sats_from_msat(typed_value(values.get("min-emergency-msat")))
+    if emergency is not None:
+        result["min_emergency_sat"] = emergency
     # getinfo is the authoritative live source for the two announcement
     # fields, and also keeps the form useful across CLN versions which omit
     # default-valued records from listconfigs.

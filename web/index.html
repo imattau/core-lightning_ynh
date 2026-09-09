@@ -202,7 +202,7 @@
         <div class="settings-grid">
           <label><span class="field-label">Node alias</span><input class="field-input" id="setting-alias" type="text" maxlength="255"></label>
           <label><span class="field-label">Minimum channel capacity (sats)</span><input class="field-input" id="setting-min-capacity" type="number" min="0" max="16777215"></label>
-          <label><span class="field-label">Emergency reserve (sats)</span><input class="field-input" id="setting-min-emergency" type="number" min="0" max="2100000000"><small class="field-help">Reserved for closing anchor channels. Keep enough for on-chain fees.</small></label>
+          <label><span class="field-label">Emergency reserve (sats)</span><input class="field-input" id="setting-min-emergency" type="number" min="0" max="2100000000" readonly><small class="field-help">Reserved for closing anchor channels. Change this in the YunoHost Core Lightning config panel; it requires a node restart.</small></label>
           <label><span class="field-label">Routing base fee (msats)</span><input class="field-input" id="setting-fee-base" type="number" min="0" max="16777215"></label>
           <label><span class="field-label">Routing proportional fee (millionths)</span><input class="field-input" id="setting-fee-per-sat" type="number" min="0" max="16777215"></label>
           <label><span class="field-label">Node color</span><input class="field-input" id="setting-rgb" type="text" inputmode="text" maxlength="6" placeholder="Optional six hex characters"></label>

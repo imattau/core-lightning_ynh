@@ -366,7 +366,6 @@
   const settingFields = {
     alias: document.querySelector('#setting-alias'),
     min_capacity_sat: document.querySelector('#setting-min-capacity'),
-    min_emergency_sat: document.querySelector('#setting-min-emergency'),
     fee_base: document.querySelector('#setting-fee-base'),
     fee_per_sat: document.querySelector('#setting-fee-per-sat'),
     rgb: document.querySelector('#setting-rgb'),
@@ -387,6 +386,8 @@
           rgb: '',
           log_level: 'info'
         }, data.settings || {});
+        const emergencyField = document.querySelector('#setting-min-emergency');
+        if (emergencyField && values.min_emergency_sat !== undefined) emergencyField.value = values.min_emergency_sat;
         Object.keys(settingFields).forEach(function (key) {
           if (settingFields[key] && values[key] !== undefined) settingFields[key].value = values[key];
         });

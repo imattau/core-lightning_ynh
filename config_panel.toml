@@ -76,6 +76,15 @@ services = ["__APP__"]
         bind = "min_capacity_sat:__APP__"
         help.en = "Reject incoming channels whose effective capacity is below this value."
 
+        [node.settings.min_emergency_sat]
+        ask.en = "Emergency reserve (satoshis)"
+        ask.fr = "Réserve d'urgence (satoshis)"
+        type = "number"
+        min = 0
+        default = 25000
+        bind = "min_emergency_sat:__APP__"
+        help.en = "Funds kept available for closing anchor channels. Lowering this is only recommended for testing and requires a Core Lightning restart."
+
         [node.settings.grpc_enabled]
         ask.en = "Enable gRPC (for local apps like Alby Hub)"
         ask.fr = "Activer gRPC (pour les applications locales comme Alby Hub)"

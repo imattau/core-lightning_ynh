@@ -181,12 +181,13 @@ ynh_cln_read_bitcoin_rpc_credentials() {
 }
 
 ynh_cln_write_config() {
-	local announce_addr rgb_value fee_base fee_per_sat min_capacity_sat
+	local announce_addr rgb_value fee_base fee_per_sat min_capacity_sat min_emergency_sat
 	announce_addr="$(ynh_cln_setting announce_addr '')"
 	rgb_value="$(ynh_cln_setting rgb '')"
 	fee_base="$(ynh_cln_setting fee_base 1000)"
 	fee_per_sat="$(ynh_cln_setting fee_per_sat 10)"
 	min_capacity_sat="$(ynh_cln_setting min_capacity_sat 10000)"
+	min_emergency_sat="$(ynh_cln_setting min_emergency_sat 25000)"
 	case "$announce_addr" in *[[:space:]]*) ynh_die "Announce address must not contain whitespace" ;; esac
 	if [ -n "$rgb_value" ] && { [ "${#rgb_value}" -ne 6 ] || case "$rgb_value" in *[!0-9A-Fa-f]*) true ;; *) false ;; esac; }; then
 		ynh_die "Node color must be exactly six hexadecimal characters"
@@ -194,6 +195,8 @@ ynh_cln_write_config() {
 	case "$fee_base" in ''|*[!0-9]*) ynh_die "Base fee must be a non-negative integer" ;; esac
 	case "$fee_per_sat" in ''|*[!0-9]*) ynh_die "Proportional fee must be a non-negative integer" ;; esac
 	case "$min_capacity_sat" in ''|*[!0-9]*) ynh_die "Minimum channel capacity must be a non-negative integer" ;; esac
+	case "$min_emergency_sat" in ''|*[!0-9]*) ynh_die "Emergency reserve must be a non-negative integer" ;; esac
+	[ "$min_emergency_sat" -le 2100000000 ] || ynh_die "Emergency reserve must be no more than 2100000000 satoshis"
 	mkdir -p "$config_dir"
 	{
 		echo "# Managed by YunoHost package $app. Edit through the config panel when possible."
@@ -208,6 +211,7 @@ ynh_cln_write_config() {
 		echo "fee-base=$fee_base"
 		echo "fee-per-satoshi=$fee_per_sat"
 		echo "min-capacity-sat=$min_capacity_sat"
+		echo "min-emergency-msat=${min_emergency_sat}000msat"
 		echo "bitcoin-rpcconnect=127.0.0.1"
 		echo "bitcoin-rpcport=8332"
 		echo "bitcoin-rpcuser=$bitcoin_rpc_user"

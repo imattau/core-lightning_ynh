@@ -72,6 +72,7 @@ set__rgb() {
 get__fee_base() { ynh_cln_setting fee_base 1000; }
 get__fee_per_sat() { ynh_cln_setting fee_per_sat 10; }
 get__min_capacity_sat() { ynh_cln_setting min_capacity_sat 10000; }
+get__min_emergency_sat() { ynh_cln_setting min_emergency_sat 25000; }
 
 set__fee_base() {
 	case "$fee_base" in ''|*[!0-9]*) ynh_die "Base fee must be a non-negative integer" ;; esac
@@ -92,6 +93,14 @@ set__min_capacity_sat() {
 	ynh_app_setting_set --app="$app" --key=min_capacity_sat --value="$min_capacity_sat"
 	ynh_cln_require_bitcoin_app; ynh_cln_read_bitcoin_rpc_credentials; ynh_cln_write_config
 	ynh_cln_restart_and_check min_capacity_sat
+}
+
+set__min_emergency_sat() {
+	case "$min_emergency_sat" in ''|*[!0-9]*) ynh_die "Emergency reserve must be a non-negative integer" ;; esac
+	[ "$min_emergency_sat" -le 2100000000 ] || ynh_die "Emergency reserve must be no more than 2100000000 satoshis"
+	ynh_app_setting_set --app="$app" --key=min_emergency_sat --value="$min_emergency_sat"
+	ynh_cln_require_bitcoin_app; ynh_cln_read_bitcoin_rpc_credentials; ynh_cln_write_config
+	ynh_cln_restart_and_check min_emergency_sat
 }
 
 ynh_cln_peer_choices() {
