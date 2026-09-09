@@ -278,6 +278,12 @@ run__generate_deposit_address() {
 	ynh_print_info "Wait for the transaction to confirm, then use Open channel in this panel. This address and its funds belong to Core Lightning, not an embedded Alby Hub wallet."
 }
 
+get__deposit_address() {
+	ynh_app_setting_get --app="$app" --key=deposit_address 2>/dev/null || printf '%s' 'No deposit address generated yet.'
+}
+
+getter__deposit_address() { get__deposit_address; }
+
 run__open_channel() {
 	local result available
 	ynh_cln_select_peer
