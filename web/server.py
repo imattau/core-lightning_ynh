@@ -58,7 +58,7 @@ NODE_SETTINGS = {
 }
 
 
-def rpc(method, *args):
+def rpc(method, *args, timeout=RPC_TIMEOUT):
     command = [RPC_BIN]
     if LIGHTNING_DIR:
         command.extend(["--lightning-dir", LIGHTNING_DIR])
@@ -69,7 +69,7 @@ def rpc(method, *args):
         check=False,
         capture_output=True,
         text=True,
-        timeout=RPC_TIMEOUT,
+        timeout=timeout,
     )
     if completed.returncode != 0:
         raise RuntimeError("Core Lightning RPC request failed")
@@ -219,7 +219,7 @@ def bootstrap_peers():
     for node_id, host, port in unique[:3]:
         attempted.append(node_id)
         try:
-            result = rpc("connect", node_id, host, str(port))
+            result = rpc("connect", node_id, host, str(port), timeout=5)
             connected.append({"id": node_id, "host": host, "port": port, "result": result})
         except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
             failures.append({"id": node_id, "error": str(exc)})
