@@ -109,6 +109,8 @@
             <div class="form-grid">
               <label><span class="field-label">Channel amount (sats)</span><input class="field-input" id="channel-amount" type="number" min="546" max="16777215" placeholder="250000"></label>
               <label><span class="field-label">Manual peer ID</span><input class="field-input" id="manual-peer-id" inputmode="text" maxlength="66" placeholder="Optional 66-character ID"></label>
+              <label><span class="field-label">Peer host (for manual connect)</span><input class="field-input" id="manual-peer-host" inputmode="url" placeholder="IP address or hostname"></label>
+              <label><span class="field-label">Peer port</span><input class="field-input" id="manual-peer-port" type="number" min="1" max="65535" placeholder="9735"></label>
             </div>
             <label class="check-row"><input id="public-channel" type="checkbox"><span>Announce this channel publicly</span></label>
             <label class="check-row danger-check"><input id="confirm-channel" type="checkbox"><span>I understand this will spend confirmed CLN wallet funds</span></label>

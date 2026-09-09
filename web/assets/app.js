@@ -206,6 +206,8 @@
 
   const peerSelect = document.querySelector('#peer-select');
   const manualPeer = document.querySelector('#manual-peer-id');
+  const manualPeerHost = document.querySelector('#manual-peer-host');
+  const manualPeerPort = document.querySelector('#manual-peer-port');
   const connectPeer = document.querySelector('#connect-peer');
   const openChannel = document.querySelector('#open-channel');
   const channelMessage = document.querySelector('#channel-message');
@@ -241,7 +243,12 @@
       const payload = channelPayload(false);
       connectPeer.disabled = true;
       if (channelMessage) channelMessage.textContent = 'Connecting to peer…';
-      post('api/v1/peers/connect', { peer_id: payload.peer_id })
+      const connectPayload = { peer_id: payload.peer_id };
+      const host = manualPeerHost && manualPeerHost.value.trim();
+      const port = manualPeerPort && manualPeerPort.value.trim();
+      if (host) connectPayload.host = host;
+      if (port) connectPayload.port = port;
+      post('api/v1/peers/connect', connectPayload)
         .then(function () { if (channelMessage) channelMessage.textContent = 'Peer connection requested.'; })
         .catch(function (error) { if (channelMessage) channelMessage.textContent = error.message; })
         .finally(function () { connectPeer.disabled = false; });
