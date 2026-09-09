@@ -1,0 +1,22 @@
+[Unit]
+Description=Core Lightning web interface
+After=network-online.target core_lightning.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP__
+Group=__APP__
+ExecStart=/usr/bin/python3 __INSTALL_DIR__/web/server.py
+EnvironmentFile=-/etc/__APP__/web.env
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+NoNewPrivileges=true
+ReadWritePaths=__DATA_DIR__
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

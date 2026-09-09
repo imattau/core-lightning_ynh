@@ -11,6 +11,7 @@ network="bitcoin"
 service_name="$app"
 lightningd_bin="$install_dir/bin/lightningd"
 lightning_cli="$install_dir/bin/lightning-cli"
+web_service_name="${app}_web"
 
 bitcoin_app="bitcoin_core"
 bitcoin_config_dir="/etc/$bitcoin_app"
@@ -25,6 +26,47 @@ ynh_cln_setting() {
 	local key="$1" default="$2" value
 	value="$(ynh_app_setting_get --app="$app" --key="$key" 2>/dev/null || true)"
 	printf '%s' "${value:-$default}"
+}
+
+ynh_cln_web_port() {
+	local port
+	port="$(ynh_app_setting_get --app="$app" --key=port_main 2>/dev/null || true)"
+	printf '%s' "${port:-8090}"
+}
+
+ynh_cln_write_web_env() {
+	cat >"$config_dir/web.env" <<EOF
+CLN_WEB_LISTEN=127.0.0.1:$(ynh_cln_web_port)
+CLN_WEB_STATIC_DIR=$install_dir/web
+CLN_RPC_BIN=$lightning_cli
+CLN_LIGHTNING_DIR=$data_dir
+CLN_HSMTOOL=$install_dir/bin/lightning-hsmtool
+CLN_HSM_SECRET=$data_dir/bitcoin/hsm_secret
+EOF
+	chown root:"$app" "$config_dir/web.env"
+	chmod 0640 "$config_dir/web.env"
+}
+
+ynh_cln_configure_web_service() {
+	local template
+	template="$(cd "$(dirname "${BASH_SOURCE[0]}")/../conf" && pwd)/systemd-web.service"
+	install -m 0644 "$template" "/etc/systemd/system/$web_service_name.service"
+	sed -i \
+		-e "s#__APP__#$app#g" \
+		-e "s#__INSTALL_DIR__#$install_dir#g" \
+		-e "s#__DATA_DIR__#$data_dir#g" \
+		"/etc/systemd/system/$web_service_name.service"
+	ynh_cln_write_web_env
+	systemctl daemon-reload
+}
+
+ynh_cln_install_web_assets() {
+	local source_dir
+	source_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../web" && pwd)"
+	install -d "$install_dir/web"
+	cp -a "$source_dir"/. "$install_dir/web/"
+	chown -R root:"$app" "$install_dir/web"
+	chmod -R a+rX "$install_dir/web"
 }
 
 # Resolve the Bitcoin Core CLI from the installed app's resource directory.

@@ -16,4 +16,6 @@ The config panel reports only whether expected backup files are present; it
 does not store the mnemonic. Temporarily acknowledge the recovery warning in
 the panel to display the phrase inline, or export it with
 `lightning-hsmtool getsecret`, and keep it offline. The package does not send
-the phrase to YunoHost operation output.
+the phrase to YunoHost operation output. The protected web UI can reveal it
+after an explicit acknowledgement; it is held only in page memory and is not
+stored in browser storage or package settings.

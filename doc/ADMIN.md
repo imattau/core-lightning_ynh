@@ -1,6 +1,6 @@
 # Administration
 
-The package does not ship a general web wallet UI, but its YunoHost config panel provides guarded wallet-funding, peer-discovery, and channel actions for the common Alby Hub integration workflow. Use the panel's **Peers & channels** section to generate a CLN deposit address, select or manually specify a peer, connect, open a channel, and inspect channel state. Use `lightning-cli` over the local Unix socket for invoices, payments, advanced channel operations, and troubleshooting.
+The package includes a protected Core Lightning web UI alongside the YunoHost config panel. Use the app tile for balances, deposit-address generation, peer discovery, peer connection, channel opening, and recovery display. The config panel remains for package settings and diagnostics. Use `lightning-cli` over the local Unix socket for invoices, payments, advanced channel operations, and troubleshooting.
 
 Opening a channel remains an operator and financial decision: the panel requires the peer, amount, visibility, and an explicit funding confirmation. It does not choose peers, manage liquidity, pay invoices, or close channels.
 

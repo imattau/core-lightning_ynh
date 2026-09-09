@@ -32,4 +32,10 @@ fi
 ynh_cln_check_bitcoin_rpc
 ynh_cln_fix_grpc_cert_perms
 
+ynh_script_progression "Registering Core Lightning web interface..."
+yunohost service add "$web_service_name" --description="Core Lightning web interface" --log=systemd || true
+ynh_cln_install_web_assets
+ynh_cln_configure_web_service
+ynh_systemctl --service="$web_service_name" --action=start --log_path=systemd --timeout=60
+
 ynh_print_info "Core Lightning is running. Bitcoin Core synchronization may still be in progress; use lightning-cli getinfo and bitcoin-cli getblockchaininfo to monitor readiness."

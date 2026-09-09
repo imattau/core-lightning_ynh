@@ -254,18 +254,6 @@ run__generate_deposit_address() {
 	ynh_print_info "Wait for the transaction to confirm, then use Open channel in this panel. This address and its funds belong to Core Lightning, not an embedded Alby Hub wallet."
 }
 
-get__deposit_address() {
-	local address
-	address="$(ynh_cln_setting deposit_address '')"
-	if [ -n "$address" ]; then
-		printf '%s\n\n`%s`\n\n%s' \
-			'Latest Core Lightning deposit address' "$address" \
-			'Generate another address only if you need a new one; previously generated Core Lightning addresses remain valid.'
-	else
-		printf '%s' 'No deposit address has been generated yet. Use **Generate deposit address** above.'
-	fi
-}
-
 run__open_channel() {
 	local result available
 	ynh_cln_select_peer
@@ -312,7 +300,7 @@ ynh_cln_recovery_secret() {
 get__recovery_mnemonic() {
 	local mnemonic
 	if mnemonic="$(ynh_cln_recovery_secret 2>/dev/null)"; then
-		printf '%s\n\n`%s`' 'Wallet recovery phrase' "$mnemonic"
+		printf '%s' "$mnemonic"
 	else
 		printf '%s' 'Recovery phrase is unavailable. Check that the node completed its first startup and that its hsm_secret is readable.'
 	fi

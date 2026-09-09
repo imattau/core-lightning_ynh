@@ -23,3 +23,9 @@ if ! ynh_cln_wait_for_rpc 300; then
 fi
 ynh_cln_check_bitcoin_rpc
 ynh_cln_fix_grpc_cert_perms
+
+ynh_script_progression "Updating Core Lightning web interface..."
+yunohost service add "$web_service_name" --description="Core Lightning web interface" --log=systemd || true
+ynh_cln_install_web_assets
+ynh_cln_configure_web_service
+ynh_systemctl --service="$web_service_name" --action=restart --log_path=systemd --timeout=60

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f5">
+  <title>Core Lightning</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">⚡</div>
+        <div>
+          <strong>Core Lightning</strong>
+          <span>YunoHost node</span>
+        </div>
+      </div>
+      <nav class="nav-list">
+        <a class="nav-item active" href="#home" aria-current="page"><span>⌂</span>Home</a>
+        <a class="nav-item" href="#wallet"><span>₿</span>Wallet</a>
+        <a class="nav-item" href="#channels"><span>↔</span>Channels</a>
+        <a class="nav-item" href="#peers"><span>◉</span>Peers</a>
+        <a class="nav-item" href="#node"><span>⌁</span>Node</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <a class="nav-item" href="#backup"><span>▣</span>Backup &amp; recovery</a>
+        <a class="nav-item" href="#settings"><span>⚙</span>Settings</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
+        <div>
+          <p class="eyebrow">Lightning node</p>
+          <h1>Good morning, operator</h1>
+        </div>
+        <div class="topbar-actions">
+          <span class="status-pill online"><i></i>Online</span>
+          <button class="avatar" type="button" aria-label="Account menu">CL</button>
+        </div>
+      </header>
+
+      <section class="notice" aria-label="Setup status">
+        <div class="notice-icon">⚡</div>
+        <div>
+          <strong>Finish setting up your node</strong>
+          <p>Fund the on-chain wallet, then open your first channel to start using Lightning.</p>
+        </div>
+        <button class="button button-dark" type="button">View next step</button>
+      </section>
+
+      <section class="balance-grid" aria-label="Node balances">
+        <article class="balance-card featured">
+          <div class="card-label">Total balance <span class="info">i</span></div>
+          <div class="balance-value"><span id="total-balance">0</span> <small>sats</small></div>
+          <div class="muted">≈ $0.00</div>
+        </article>
+        <article class="balance-card">
+          <div class="card-label">On-chain balance</div>
+          <div class="metric-value"><span id="onchain-balance">0</span> <small>sats</small></div>
+          <div class="card-action"><a href="#wallet">Deposit bitcoin <span>→</span></a></div>
+        </article>
+        <article class="balance-card">
+          <div class="card-label">Channel capacity</div>
+          <div class="metric-value"><span id="channel-capacity">0</span> <small>sats</small></div>
+          <div class="card-action"><a href="#channels">Open a channel <span>→</span></a></div>
+        </article>
+      </section>
+
+      <section class="panel wallet-panel" id="wallet">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">On-chain wallet</p>
+            <h2>Deposit bitcoin</h2>
+          </div>
+          <span class="status-pill" id="wallet-state">Ready</span>
+        </div>
+        <div class="address-row">
+          <div>
+            <p class="muted">Use this address to fund your Core Lightning wallet.</p>
+            <code id="deposit-address">No address generated yet</code>
+          </div>
+          <div class="address-actions">
+            <button class="button button-yellow" id="generate-address" type="button">Generate address</button>
+            <button class="button button-light" id="copy-address" type="button" disabled>Copy</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel channels-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Network</p>
+              <h2>Channels</h2>
+            </div>
+            <a class="text-button" href="#channels">View all <span>→</span></a>
+          </div>
+          <div class="channel-workflow">
+            <div class="channel-summary" id="channel-summary">
+              <div class="empty-icon">↔</div>
+              <div><h3>No channels yet</h3><p>Choose a peer below, connect to it, then open a channel.</p></div>
+            </div>
+            <label class="field-label" for="peer-select">Discovered peer</label>
+            <select class="field-input" id="peer-select"><option value="">Loading discovered peers…</option></select>
+            <div class="form-grid">
+              <label><span class="field-label">Channel amount (sats)</span><input class="field-input" id="channel-amount" type="number" min="546" max="16777215" placeholder="250000"></label>
+              <label><span class="field-label">Manual peer ID</span><input class="field-input" id="manual-peer-id" inputmode="text" maxlength="66" placeholder="Optional 66-character ID"></label>
+            </div>
+            <label class="check-row"><input id="public-channel" type="checkbox"><span>Announce this channel publicly</span></label>
+            <label class="check-row danger-check"><input id="confirm-channel" type="checkbox"><span>I understand this will spend confirmed CLN wallet funds</span></label>
+            <div class="workflow-actions">
+              <button class="button button-light" id="connect-peer" type="button">Connect to peer</button>
+              <button class="button button-yellow" id="open-channel" type="button">Open channel</button>
+            </div>
+            <p class="form-message" id="channel-message" role="status"></p>
+          </div>
+          <div class="empty-state legacy-empty" hidden>
+            <div class="empty-icon">↔</div>
+            <h3>No channels yet</h3>
+            <p>Open a channel to send and receive Lightning payments.</p>
+            <button class="button button-yellow" type="button">Open your first channel</button>
+          </div>
+        </article>
+
+        <article class="panel status-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">System</p>
+              <h2>Node status</h2>
+            </div>
+            <span class="status-pill online"><i></i>Healthy</span>
+          </div>
+          <dl class="status-list">
+            <div><dt>Backend</dt><dd>Core Lightning</dd></div>
+            <div><dt>Network</dt><dd id="node-network">Bitcoin</dd></div>
+            <div><dt>Bitcoin sync</dt><dd id="bitcoin-sync"><span class="status-dot warning"></span>Checking</dd></div>
+            <div><dt>Peers</dt><dd><span id="peer-count">0</span> connected</dd></div>
+          </dl>
+          <a class="text-button" href="#node">Open node details <span>→</span></a>
+        </article>
+      </section>
+
+      <section class="panel recovery-panel" id="backup">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Emergency access</p>
+            <h2>Backup &amp; recovery</h2>
+          </div>
+          <span class="status-pill">Kept private</span>
+        </div>
+        <div class="recovery-copy">
+          <p>Reveal the wallet recovery phrase only when you are writing it down in a secure, offline place.</p>
+          <label class="check-row danger-check"><input id="confirm-recovery" type="checkbox"><span>I understand that anyone with this phrase can take control of this wallet</span></label>
+          <div class="workflow-actions">
+            <button class="button button-light" id="reveal-recovery" type="button">Show recovery phrase</button>
+            <button class="button button-light" id="copy-recovery" type="button" disabled>Copy phrase</button>
+          </div>
+          <div class="recovery-secret" id="recovery-secret" hidden>
+            <code id="recovery-phrase" aria-live="polite"></code>
+            <p class="muted">This phrase is only held in this page until you reload it. Do not save it to a cloud service or send it to anyone.</p>
+          </div>
+          <p class="form-message" id="recovery-message" role="status"></p>
+        </div>
+      </section>
+
+      <section class="panel quick-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Shortcuts</p>
+            <h2>What do you want to do?</h2>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <button class="quick-action" type="button"><span class="quick-icon yellow">₿</span><span><strong>Deposit bitcoin</strong><small>Generate an address and QR code</small></span><b>→</b></button>
+          <button class="quick-action" type="button"><span class="quick-icon blue">↔</span><span><strong>Connect a peer</strong><small>Find a Lightning node to connect to</small></span><b>→</b></button>
+          <button class="quick-action" type="button"><span class="quick-icon purple">▣</span><span><strong>Check your backup</strong><small>Keep your recovery information safe</small></span><b>→</b></button>
+        </div>
+      </section>
+
+      <footer class="footer">Core Lightning · Secure self-hosted Lightning for YunoHost</footer>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a class="active" href="#home"><span>⌂</span>Home</a>
+    <a href="#wallet"><span>₿</span>Wallet</a>
+    <a href="#channels"><span>↔</span>Channels</a>
+    <a href="#node"><span>⌁</span>Node</a>
+  </nav>
+  <script src="assets/app.js"></script>
+</body>
+</html>

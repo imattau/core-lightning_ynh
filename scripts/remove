@@ -10,6 +10,13 @@ if systemctl is-active --quiet "$service_name"; then
 	fi
 fi
 
+ynh_script_progression "Stopping Core Lightning web interface..."
+ynh_systemctl --service="$web_service_name" --action=stop || true
+yunohost service remove "$web_service_name" || true
+systemctl disable "$web_service_name.service" >/dev/null 2>&1 || true
+ynh_safe_rm "/etc/systemd/system/$web_service_name.service"
+systemctl daemon-reload
+
 ynh_script_progression "Stopping Core Lightning..."
 ynh_systemctl --service="$service_name" --action=stop --timeout=300 || true
 yunohost service remove "$service_name" || true
