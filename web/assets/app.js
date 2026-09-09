@@ -292,7 +292,14 @@
     fetch('api/v1/node/settings')
       .then(function (response) { return response.json().then(function (data) { if (!response.ok) throw new Error(data.error || 'Unable to read node settings'); return data; }); })
       .then(function (data) {
-        const values = data.settings || {};
+        const values = Object.assign({
+          alias: 'My YunoHost Lightning Node',
+          min_capacity_sat: 10000,
+          fee_base: 1000,
+          fee_per_sat: 10,
+          rgb: '',
+          log_level: 'info'
+        }, data.settings || {});
         Object.keys(settingFields).forEach(function (key) {
           if (settingFields[key] && values[key] !== undefined) settingFields[key].value = values[key];
         });
