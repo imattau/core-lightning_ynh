@@ -57,9 +57,20 @@ def rpc(method, *args, timeout=RPC_TIMEOUT):
         timeout=timeout,
     )
     if completed.returncode != 0:
-        detail = (completed.stderr.strip() or completed.stdout.strip()).splitlines()
-        message = detail[-1] if detail else "Core Lightning RPC request failed (exit code " + str(completed.returncode) + ")"
-        raise RuntimeError("Core Lightning RPC failed: " + message[:500])
+        raw_error = completed.stderr.strip() or completed.stdout.strip()
+        message = None
+        try:
+            error_payload = json.loads(raw_error)
+            if isinstance(error_payload, dict):
+                message = error_payload.get("message")
+                if not message and isinstance(error_payload.get("error"), dict):
+                    message = error_payload["error"].get("message")
+        except json.JSONDecodeError:
+            pass
+        if not message:
+            detail = [line.strip() for line in raw_error.splitlines() if line.strip() and line.strip() not in ("{", "}")]
+            message = detail[-1] if detail else "Core Lightning RPC request failed (exit code " + str(completed.returncode) + ")"
+        raise RuntimeError("Core Lightning RPC failed: " + str(message)[:500])
     try:
         return json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
