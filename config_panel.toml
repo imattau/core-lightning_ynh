@@ -119,7 +119,6 @@ services = ["__APP__"]
         type = "markdown"
         readonly = true
         bind = "null"
-        default = ""
         visible = "reveal_recovery"
 
     [node.channels]
@@ -248,4 +247,3 @@ services = ["__APP__"]
         type = "markdown"
         readonly = true
         bind = "null"
-        default = "No deposit address has been generated yet."
