@@ -111,7 +111,7 @@ def dns_query_srv(seed):
             nameservers = [line.split()[1] for line in resolv if line.startswith("nameserver ")]
     except OSError:
         pass
-    for query_name in ("a2." + seed, seed):
+    for query_name in ("n8.a2." + seed, "_nodes._tcp." + seed, "a2." + seed):
         transaction = random.randrange(0, 65536)
         labels = b"".join(bytes([len(label)]) + label.encode("ascii") for label in query_name.split(".")) + b"\0"
         packet = struct.pack("!HHHHHH", transaction, 0x0100, 1, 0, 0, 0) + labels + struct.pack("!HH", 33, 1)
@@ -124,7 +124,7 @@ def dns_query_srv(seed):
                 if len(response) < 12 or struct.unpack("!H", response[:2])[0] != transaction:
                     continue
                 flags, questions, answers, authority, additional = struct.unpack("!HHHHH", response[2:12])
-                if not flags & 0x8000 or flags & 0x000F:
+                if not flags & 0x8000 or flags & 0x0200 or flags & 0x000F:
                     continue
                 offset = 12
                 for _ in range(questions):
