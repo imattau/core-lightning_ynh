@@ -257,6 +257,14 @@
       .finally(function () { if (button) button.disabled = false; });
   }
 
+  function peerAddress(peer) {
+    const address = (peer.addresses || [])[0];
+    if (!address) return { host: null, port: null };
+    if (typeof address === 'object') return { host: address.address || address.host || null, port: address.port || null };
+    const match = String(address).match(/^(.+):(\d+)$/);
+    return match ? { host: match[1].replace(/^\[|\]$/g, ''), port: match[2] } : { host: String(address), port: null };
+  }
+
   if (manualConnectPeer) manualConnectPeer.addEventListener('click', function () {
     try {
       const peerId = manualPeer && manualPeer.value.trim();
@@ -300,12 +308,15 @@
     peers.forEach(function (peer) {
       const row = document.createElement('div');
       row.className = 'peer-row';
-      row.innerHTML = '<div><strong></strong><small></small></div><button class="button button-light" type="button">Connect</button>';
+      row.innerHTML = '<div><strong></strong><small></small></div><button class="button button-light" type="button"></button>';
       row.querySelector('strong').textContent = peer.alias || 'Unnamed peer';
-      row.querySelector('small').textContent = peer.id;
+      row.querySelector('small').textContent = peer.id + (peer.connected ? ' · ' + (peer.state || 'Connected') : '');
+      row.querySelector('button').textContent = peer.connected ? 'Connected' : 'Connect';
+      row.querySelector('button').disabled = Boolean(peer.connected);
       row.querySelector('button').addEventListener('click', function () {
         if (peerMessage) peerMessage.textContent = 'Connecting to ' + (peer.alias || peer.id.slice(0, 12)) + '…';
-        connectPeerRequest(peer.id, null, null, peerMessage, row.querySelector('button'));
+        const address = peerAddress(peer);
+        connectPeerRequest(peer.id, address.host, address.port, peerMessage, row.querySelector('button')).then(function () { loadPeers(true); });
       });
       peerList.appendChild(row);
     });

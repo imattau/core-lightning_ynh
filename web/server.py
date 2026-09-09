@@ -442,6 +442,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/v1/peers/discovered":
                 nodes = rpc("listnodes")
+                connected_peers = {
+                    peer.get("id"): peer
+                    for peer in rpc("listpeers").get("peers", [])
+                    if isinstance(peer.get("id"), str)
+                }
                 discovered = []
                 for node in nodes.get("nodes", []):
                     addresses = node.get("addresses") or []
@@ -452,6 +457,8 @@ class Handler(BaseHTTPRequestHandler):
                         "alias": node.get("alias") or "Unnamed peer",
                         "addresses": addresses,
                         "last_timestamp": node.get("last_timestamp", 0),
+                        "connected": bool(connected_peers.get(node["nodeid"], {}).get("connected")),
+                        "state": connected_peers.get(node["nodeid"], {}).get("state"),
                     })
                 discovered.sort(key=lambda item: item.get("last_timestamp", 0), reverse=True)
                 self.send_json(HTTPStatus.OK, {"peers": discovered[:50]})
