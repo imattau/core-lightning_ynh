@@ -204,14 +204,6 @@ services = ["__APP__"]
         bind = "null"
         enabled = "(peer_mode == 'discovered' && peer_id) || (peer_mode == 'manual' && manual_peer_id && manual_peer_host && manual_peer_port)"
 
-        [node.channels.generate_deposit_address]
-        ask.en = "Generate deposit address"
-        ask.fr = "Générer une adresse de dépôt"
-        type = "button"
-        style = "info"
-        icon = "bitcoin"
-        bind = "null"
-
         [node.channels.open_channel]
         ask.en = "Open channel"
         ask.fr = "Ouvrir un canal"
@@ -227,4 +219,16 @@ services = ["__APP__"]
         type = "button"
         style = "success"
         icon = "list"
+        bind = "null"
+
+    [node.funding]
+    name.en = "On-chain funding"
+    name.fr = "Financement on-chain"
+
+        [node.funding.generate_deposit_address]
+        ask.en = "Generate deposit address"
+        ask.fr = "Générer une adresse de dépôt"
+        type = "button"
+        style = "info"
+        icon = "bitcoin"
         bind = "null"

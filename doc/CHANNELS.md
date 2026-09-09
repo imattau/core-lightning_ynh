@@ -8,7 +8,8 @@ YunoHost config panel and use **Peers & channels**:
 1. Leave **Peer selection** on **Discovered** and choose a peer from the
    discovered list. Core Lightning supplies the peer's address through gossip
    or DNS.
-2. Click **Generate deposit address** and send on-chain Bitcoin to the
+2. In **On-chain funding**, click **Generate deposit address** and send
+   on-chain Bitcoin to the
    displayed address.
 3. Wait for the transaction to confirm in Core Lightning.
 4. Click **Connect to peer** and confirm the success message.
