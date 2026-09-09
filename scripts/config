@@ -95,16 +95,19 @@ set__min_capacity_sat() {
 }
 
 run__show_recovery_mnemonic() {
-	local hsmtool="$install_dir/bin/lightning-hsmtool"
+	local hsmtool="$install_dir/bin/lightning-hsmtool" mnemonic
 	local hsm_secret="$data_dir/bitcoin/hsm_secret"
 	[ -x "$hsmtool" ] || hsmtool="$install_dir/tools/lightning-hsmtool"
 	[ -x "$hsmtool" ] || ynh_die "Core Lightning's lightning-hsmtool is not installed. Repair or upgrade the package first."
 	[ -r "$hsm_secret" ] || ynh_die "Core Lightning hsm_secret was not found at $hsm_secret. The node may not have completed first startup."
-	ynh_print_warn "The next output contains the wallet recovery mnemonic. Do not copy it into tickets, screenshots, shell history, or ordinary logs."
-	ynh_print_warn "Anyone with this mnemonic may be able to steal funds. Record it offline, then clear this operation output."
-	if ! "$hsmtool" getsecret "$hsm_secret"; then
+	if ! mnemonic="$("$hsmtool" getsecret "$hsm_secret" 2>/dev/null)" || [ -z "$mnemonic" ]; then
 		ynh_die "Core Lightning could not export the recovery mnemonic. If this is an older node, use the legacy secret format documented in doc/BACKUP.md."
 	fi
+	# Config-panel actions must use YunoHost's print helpers: raw stdout from
+	# the action is not reliably surfaced by the web-admin operation view.
+	ynh_print_warn "The next output contains the wallet recovery mnemonic. Do not copy it into tickets, screenshots, shell history, or ordinary logs."
+	ynh_print_warn "Anyone with this mnemonic may be able to steal funds. Record it offline, then clear this operation output."
+	ynh_print_warn "Recovery mnemonic: $mnemonic"
 }
 
 get__grpc_enabled() {
