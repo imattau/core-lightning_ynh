@@ -94,6 +94,106 @@ set__min_capacity_sat() {
 	ynh_cln_restart_and_check min_capacity_sat
 }
 
+ynh_cln_validate_channel_inputs() {
+	case "$peer_id" in
+		''|*[!0-9A-Fa-f]*) ynh_die "Peer node ID must be 66 hexadecimal characters" ;;
+	esac
+	[ "${#peer_id}" -eq 66 ] || ynh_die "Peer node ID must be 66 hexadecimal characters"
+
+	[ -n "$peer_host" ] || ynh_die "Peer host or IP address is required"
+	case "$peer_host" in
+		*[[:space:]]*) ynh_die "Peer host or IP address must not contain whitespace" ;;
+	esac
+
+	case "$peer_port" in
+		''|*[!0-9]*) ynh_die "Peer P2P port must be numeric" ;;
+	esac
+	[ "$peer_port" -ge 1 ] && [ "$peer_port" -le 65535 ] || ynh_die "Peer P2P port must be between 1 and 65535"
+}
+
+ynh_cln_normalize_channel_options() {
+	case "$public_channel" in
+		true|1) public_channel=true ;;
+		false|0|'') public_channel=false ;;
+		*) ynh_die "Public channel must be true or false" ;;
+	esac
+}
+
+ynh_cln_validate_channel_amount() {
+	case "$channel_amount_sat" in
+		''|*[!0-9]*) ynh_die "Channel amount must be a positive integer in satoshis" ;;
+	esac
+	[ "$channel_amount_sat" -ge 546 ] || ynh_die "Channel amount must be at least 546 satoshis"
+	[ "$channel_amount_sat" -le 16777215 ] || ynh_die "Channel amount exceeds the standard channel limit"
+}
+
+ynh_cln_peer_is_connected() {
+	local peers
+	peers="$(ynh_cln_rpc listpeers "$peer_id" 2>/dev/null || true)"
+	printf '%s' "$peers" | jq -e --arg peer "$peer_id" 'any(.peers[]?; .id == $peer and .connected == true)' >/dev/null 2>&1
+}
+
+ynh_cln_available_confirmed_sat() {
+	local funds available
+	funds="$(ynh_cln_rpc listfunds 2>/dev/null)" || ynh_die "Could not read the Core Lightning wallet balance."
+	available="$(printf '%s' "$funds" | jq -er '[.outputs[]? | select(.status == "confirmed" and (.reserved // false) == false) | (.amount_msat // 0)] | add // 0 | floor / 1000 | floor' 2>/dev/null)" || ynh_die "Core Lightning returned an unreadable wallet balance."
+	printf '%s' "$available"
+}
+
+ynh_cln_print_channel_result() {
+	local result summary
+	result="$1"
+	if summary="$(printf '%s' "$result" | jq -er '"Funding transaction: " + (.txid // "pending") + "; channel ID: " + (.channel_id // "pending") + "; output: " + ((.outnum // "pending")|tostring)' 2>/dev/null)"; then
+		ynh_print_info "$summary"
+	else
+		ynh_print_info "$result"
+	fi
+}
+
+run__connect_peer() {
+	local result
+	ynh_cln_validate_channel_inputs
+	if ynh_cln_peer_is_connected; then
+		ynh_print_info "Peer $peer_id is already connected."
+		return 0
+	fi
+	if ! result="$(ynh_cln_rpc connect "$peer_id" "$peer_host" "$peer_port" 2>&1)"; then
+		ynh_die "Core Lightning could not connect to peer $peer_id at $peer_host:$peer_port: $result"
+	fi
+	ynh_print_info "Connected to peer $peer_id at $peer_host:$peer_port."
+}
+
+run__open_channel() {
+	local result available
+	ynh_cln_validate_channel_inputs
+	ynh_cln_validate_channel_amount
+	ynh_cln_normalize_channel_options
+	case "$confirm_channel_open" in
+		true|1) ;;
+		*) ynh_die "Tick the confirmation box before opening a channel. This action spends Core Lightning wallet funds." ;;
+	esac
+	ynh_cln_healthcheck >/dev/null 2>&1 || ynh_die "Core Lightning RPC is unavailable."
+	ynh_cln_peer_is_connected || ynh_die "Peer $peer_id is not connected. Connect to the peer first."
+	available="$(ynh_cln_available_confirmed_sat)"
+	[ "$available" -gt "$channel_amount_sat" ] || ynh_die "The CLN wallet has $available confirmed spendable satoshis, but opening this channel requires $channel_amount_sat plus fees."
+	if ! result="$(ynh_cln_rpc fundchannel "$peer_id" "$channel_amount_sat" normal "$public_channel" 2>&1)"; then
+		ynh_die "Core Lightning could not open the channel: $result"
+	fi
+	ynh_print_info "Channel request accepted for peer $peer_id: $channel_amount_sat satoshis, public=$public_channel. It becomes usable after the funding transaction confirms."
+	ynh_cln_print_channel_result "$result"
+}
+
+run__show_channels() {
+	local result summary
+	ynh_cln_healthcheck >/dev/null 2>&1 || ynh_die "Core Lightning RPC is unavailable."
+	result="$(ynh_cln_rpc listfunds 2>&1)" || ynh_die "Could not read Core Lightning channels: $result"
+	if summary="$(printf '%s' "$result" | jq -er '[.channels[]? | "peer=" + (.peer_id // "unknown") + "; state=" + (.state // "unknown") + "; connected=" + ((.connected // false)|tostring) + "; local_msat=" + ((.our_amount_msat // 0)|tostring) + "; capacity_msat=" + ((.amount_msat // 0)|tostring)] | if length == 0 then "No channels found." else join("\n") end' 2>/dev/null)"; then
+		ynh_print_info "$summary"
+	else
+		ynh_print_info "$result"
+	fi
+}
+
 run__show_recovery_mnemonic() {
 	local hsmtool="$install_dir/bin/lightning-hsmtool" mnemonic
 	local hsm_secret="$data_dir/bitcoin/hsm_secret"

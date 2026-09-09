@@ -24,6 +24,12 @@ The config-panel operational status reports whether the CLN RPC, Bitcoin RPC,
 and gRPC certificates are usable. A consumer should not be considered ready
 just because the gRPC port is configured.
 
+Alby Hub uses this gRPC endpoint as a frontend for the same CLN wallet and
+channel database. It does not create a second wallet. Channel creation can be
+performed from the Core Lightning config panel's **Peers & channels** section;
+once the funding transaction confirms, Alby Hub will observe the channel
+through gRPC.
+
 ## Port auto-detection, and its one gap
 
 `grpc_port` is not just a literal default - the config-panel getter reads the actual YunoHost-assigned `port_grpc` resource value, which is conflict-checked against other apps at install time (same mechanism as `port_p2p`). This is why gRPC's port doesn't normally need manual attention even when another app (e.g. a Lightning wallet's own embedded node) already holds `9735`, CLN's own default P2P port.

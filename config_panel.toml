@@ -112,3 +112,84 @@ services = ["__APP__"]
         style = "warning"
         icon = "key"
         bind = "null"
+
+    [node.channels]
+    name.en = "Peers & channels"
+    name.fr = "Pairs & canaux"
+
+        [node.channels.peer_id]
+        ask.en = "Peer node ID"
+        ask.fr = "Identifiant du pair"
+        type = "string"
+        optional = false
+        bind = "null"
+        pattern.regexp = '^[0-9A-Fa-f]{66}$'
+        pattern.error.en = "Enter a 66-character hexadecimal node ID."
+
+        [node.channels.peer_host]
+        ask.en = "Peer host or IP address"
+        ask.fr = "Hôte ou adresse IP du pair"
+        type = "string"
+        optional = false
+        bind = "null"
+        help.en = "The peer's reachable host name or IP address."
+
+        [node.channels.peer_port]
+        ask.en = "Peer P2P port"
+        ask.fr = "Port P2P du pair"
+        type = "number"
+        min = 1
+        max = 65535
+        default = 9735
+        bind = "null"
+
+        [node.channels.channel_amount_sat]
+        ask.en = "Channel amount (satoshis)"
+        ask.fr = "Montant du canal (satoshis)"
+        type = "number"
+        min = 546
+        max = 16777215
+        optional = false
+        bind = "null"
+        help.en = "Taken from the Core Lightning on-chain wallet, plus the transaction fee."
+
+        [node.channels.public_channel]
+        ask.en = "Public channel"
+        ask.fr = "Canal public"
+        type = "boolean"
+        default = false
+        bind = "null"
+        help.en = "Leave disabled for a private channel. Enable only if you intentionally want to announce this channel for routing."
+
+        [node.channels.confirm_channel_open]
+        ask.en = "I understand this will spend CLN wallet funds"
+        ask.fr = "Je comprends que cela dépensera les fonds du portefeuille CLN"
+        type = "boolean"
+        default = false
+        bind = "null"
+
+        [node.channels.connect_peer]
+        ask.en = "Connect to peer"
+        ask.fr = "Se connecter au pair"
+        type = "button"
+        style = "info"
+        icon = "plug"
+        bind = "null"
+        enabled = "peer_id && peer_host && peer_port"
+
+        [node.channels.open_channel]
+        ask.en = "Open channel"
+        ask.fr = "Ouvrir un canal"
+        type = "button"
+        style = "warning"
+        icon = "exchange"
+        bind = "null"
+        enabled = "peer_id && channel_amount_sat && confirm_channel_open"
+
+        [node.channels.show_channels]
+        ask.en = "Show channels"
+        ask.fr = "Afficher les canaux"
+        type = "button"
+        style = "success"
+        icon = "list"
+        bind = "null"

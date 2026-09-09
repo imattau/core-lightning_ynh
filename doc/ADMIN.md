@@ -1,8 +1,8 @@
 # Administration
 
-The package intentionally does not ship a web wallet UI. Use `lightning-cli` over the local Unix socket for node, peer, channel, invoice, and payment operations.
+The package does not ship a general web wallet UI, but its YunoHost config panel provides guarded peer and channel actions for the common Alby Hub integration workflow. Use the panel's **Peers & channels** section to connect to a peer, open a channel, and inspect channel state. Use `lightning-cli` over the local Unix socket for invoices, payments, advanced channel operations, and troubleshooting.
 
-The package does not open channels, choose peers, manage liquidity, or pay invoices. Those are operator and financial decisions.
+Opening a channel remains an operator and financial decision: the panel requires the peer, amount, visibility, and an explicit funding confirmation. It does not choose peers, manage liquidity, pay invoices, or close channels.
 
 The package resolves `bitcoin-cli` from the installed Bitcoin Core resource
 directory instead of assuming a particular upstream version. The service is
