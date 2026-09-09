@@ -142,11 +142,23 @@ def validate_node_setting(key, value):
 def node_settings():
     configs = rpc("listconfigs")
     values = configs.get("configs", configs)
+    if isinstance(values, list):
+        values = {
+            item.get("config"): item
+            for item in values
+            if isinstance(item, dict) and item.get("config")
+        }
     result = {}
     for key, setting in NODE_SETTINGS.items():
         value = values.get(setting["rpc"])
         if isinstance(value, dict):
-            value = value.get("value")
+            # CLN returns typed values (value_str/value_int/value_msat) in
+            # listconfigs/setconfig responses, while older versions exposed
+            # a plain value in a few response shapes.
+            for field in ("value_str", "value_int", "value_msat", "value_bool", "value"):
+                if field in value:
+                    value = value[field]
+                    break
         if value is not None:
             result[key] = value
     return result
