@@ -112,4 +112,3 @@ services = ["__APP__"]
         style = "warning"
         icon = "key"
         bind = "null"
-        help.en = "Explicitly reveals the CLN wallet mnemonic in the operation output. Record it offline and clear the output immediately; never share or store it in YunoHost settings."
