@@ -111,14 +111,14 @@ def dns_query_srv(seed):
             nameservers = [line.split()[1] for line in resolv if line.startswith("nameserver ")]
     except OSError:
         pass
-    for query_name in ("a2." + seed, "n25.a2." + seed, "_nodes._tcp." + seed, seed):
+    for query_name in ("a2." + seed, seed):
         transaction = random.randrange(0, 65536)
         labels = b"".join(bytes([len(label)]) + label.encode("ascii") for label in query_name.split(".")) + b"\0"
         packet = struct.pack("!HHHHHH", transaction, 0x0100, 1, 0, 0, 0) + labels + struct.pack("!HH", 33, 1)
-        for nameserver in nameservers[:3]:
+        for nameserver in nameservers[:2]:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                    sock.settimeout(3)
+                    sock.settimeout(1)
                     sock.sendto(packet, (nameserver, 53))
                     response, _ = sock.recvfrom(8192)
                 if len(response) < 12 or struct.unpack("!H", response[:2])[0] != transaction:
