@@ -102,20 +102,17 @@
           <div class="channel-workflow">
             <div class="channel-summary" id="channel-summary">
               <div class="empty-icon">↔</div>
-              <div><h3>No channels yet</h3><p>Choose a peer below, connect to it, then open a channel.</p></div>
+              <div><h3>No channels yet</h3><p>Connect a peer from the Peers page, then return here to open a channel.</p></div>
             </div>
             <label class="field-label" for="peer-select">Discovered peer</label>
             <select class="field-input" id="peer-select"><option value="">Loading discovered peers…</option></select>
             <div class="form-grid">
               <label><span class="field-label">Channel amount (sats)</span><input class="field-input" id="channel-amount" type="number" min="546" max="16777215" placeholder="250000"></label>
-              <label><span class="field-label">Manual peer ID or endpoint</span><input class="field-input" id="manual-peer-id" inputmode="text" maxlength="256" placeholder="ID or ID@host:port"></label>
-              <label><span class="field-label">Peer host (for manual connect)</span><input class="field-input" id="manual-peer-host" inputmode="url" placeholder="IP address or hostname"></label>
-              <label><span class="field-label">Peer port</span><input class="field-input" id="manual-peer-port" type="number" min="1" max="65535" placeholder="9735"></label>
+              <label><span class="field-label">Peer ID for channel</span><input class="field-input" id="channel-peer-id" inputmode="text" maxlength="256" placeholder="Optional 66-character ID"></label>
             </div>
             <label class="check-row"><input id="public-channel" type="checkbox"><span>Announce this channel publicly</span></label>
             <label class="check-row danger-check"><input id="confirm-channel" type="checkbox"><span>I understand this will spend confirmed CLN wallet funds</span></label>
             <div class="workflow-actions">
-              <button class="button button-light" id="connect-peer" type="button">Connect to peer</button>
               <button class="button button-yellow" id="open-channel" type="button">Open channel</button>
             </div>
             <p class="form-message" id="channel-message" role="status"></p>
@@ -154,7 +151,18 @@
           </div>
           <div class="panel-actions"><button class="button button-light" id="refresh-peers" type="button">Refresh peers</button><button class="button button-yellow" id="bootstrap-peers" type="button">Bootstrap network</button></div>
         </div>
-        <p class="muted peers-intro">Choose a discovered node to connect, or use the Channels page for a manual peer connection.</p>
+        <p class="muted peers-intro">Choose a discovered node or enter a public endpoint to connect. Channel funding is handled separately on the Channels page.</p>
+        <div class="manual-peer-card">
+          <h3>Connect a peer manually</h3>
+          <p class="muted">Use a node ID, or the standard <code>node_id@host:port</code> format.</p>
+          <div class="form-grid">
+            <label><span class="field-label">Node ID or endpoint</span><input class="field-input" id="manual-peer-id" inputmode="text" maxlength="256" placeholder="ID or ID@host:port"></label>
+            <label><span class="field-label">Peer host</span><input class="field-input" id="manual-peer-host" inputmode="url" placeholder="Optional IP or hostname"></label>
+            <label><span class="field-label">Peer port</span><input class="field-input" id="manual-peer-port" type="number" min="1" max="65535" placeholder="9735"></label>
+          </div>
+          <div class="workflow-actions"><button class="button button-light" id="manual-connect-peer" type="button">Connect to peer</button></div>
+          <p class="form-message" id="manual-peer-message" role="status"></p>
+        </div>
         <div class="peer-list" id="peer-list"><p class="muted">Loading discovered peers…</p></div>
         <p class="form-message" id="peer-message" role="status"></p>
       </section>

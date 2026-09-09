@@ -57,7 +57,9 @@ def rpc(method, *args, timeout=RPC_TIMEOUT):
         timeout=timeout,
     )
     if completed.returncode != 0:
-        raise RuntimeError("Core Lightning RPC request failed")
+        detail = completed.stderr.strip().splitlines()
+        message = detail[-1] if detail else "Core Lightning RPC request failed"
+        raise RuntimeError("Core Lightning RPC failed: " + message[:500])
     try:
         return json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
@@ -516,7 +518,14 @@ class Handler(BaseHTTPRequestHandler):
                     result = rpc("connect", peer_id, host, str(port))
                 else:
                     result = rpc("connect", peer_id)
-                self.send_json(HTTPStatus.OK, result)
+                peers = rpc("listpeers", peer_id).get("peers", [])
+                peer = peers[0] if peers else {}
+                self.send_json(HTTPStatus.OK, {
+                    "connected": bool(peer.get("connected")),
+                    "state": peer.get("state"),
+                    "peer": peer,
+                    "result": result,
+                })
                 return
 
             if payload.get("confirm") is not True:
@@ -525,6 +534,18 @@ class Handler(BaseHTTPRequestHandler):
             public = payload.get("public", False)
             if not isinstance(public, bool):
                 raise RuntimeError("Public channel must be true or false")
+            peers = rpc("listpeers", peer_id).get("peers", [])
+            peer = peers[0] if peers else None
+            if not peer or not peer.get("connected"):
+                raise RuntimeError("Peer is not connected. Connect it from the Peers page first.")
+            funds = rpc("listfunds")
+            confirmed = sum(
+                msat_value(output.get("amount_msat", 0))
+                for output in funds.get("outputs", [])
+                if output.get("status") == "confirmed"
+            ) // 1000
+            if confirmed < amount:
+                raise RuntimeError("Insufficient confirmed CLN funds: " + str(confirmed) + " sats available.")
             result = rpc("fundchannel", peer_id, str(amount), "normal", str(public).lower())
             self.send_json(HTTPStatus.OK, result)
         except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:

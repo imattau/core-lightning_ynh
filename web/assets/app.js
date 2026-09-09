@@ -205,17 +205,19 @@
     .catch(function () { /* Status already communicates that CLN is offline. */ });
 
   const peerSelect = document.querySelector('#peer-select');
+  const channelPeer = document.querySelector('#channel-peer-id');
   const manualPeer = document.querySelector('#manual-peer-id');
   const manualPeerHost = document.querySelector('#manual-peer-host');
   const manualPeerPort = document.querySelector('#manual-peer-port');
-  const connectPeer = document.querySelector('#connect-peer');
+  const manualConnectPeer = document.querySelector('#manual-connect-peer');
   const openChannel = document.querySelector('#open-channel');
   const channelMessage = document.querySelector('#channel-message');
+  const manualPeerMessage = document.querySelector('#manual-peer-message');
   const peerList = document.querySelector('#peer-list');
   const peerMessage = document.querySelector('#peer-message');
 
   function selectedPeer() {
-    return (manualPeer && manualPeer.value.trim()) || (peerSelect && peerSelect.value) || '';
+    return (channelPeer && channelPeer.value.trim()) || (peerSelect && peerSelect.value) || '';
   }
 
   function channelPayload(requireConfirmation) {
@@ -238,21 +240,31 @@
       .then(function (response) { return response.json().then(function (data) { if (!response.ok) throw new Error(data.error || 'Request failed'); return data; }); });
   }
 
-  if (connectPeer) connectPeer.addEventListener('click', function () {
+  function connectionMessage(data) {
+    if (data.connected) return 'Peer connected' + (data.state ? ' · ' + data.state : '') + '.';
+    return data.state ? 'Connection not active yet · ' + data.state + '. Refresh peers to check again.' : 'Connection request completed; refresh peers to check the current state.';
+  }
+
+  function connectPeerRequest(peerId, host, port, messageElement, button) {
+    const payload = { peer_id: peerId };
+    if (host) payload.host = host;
+    if (port) payload.port = port;
+    if (button) button.disabled = true;
+    if (messageElement) messageElement.textContent = 'Connecting to peer…';
+    return post('api/v1/peers/connect', payload)
+      .then(function (data) { if (messageElement) messageElement.textContent = connectionMessage(data); return data; })
+      .catch(function (error) { if (messageElement) messageElement.textContent = error.message; return null; })
+      .finally(function () { if (button) button.disabled = false; });
+  }
+
+  if (manualConnectPeer) manualConnectPeer.addEventListener('click', function () {
     try {
-      const payload = channelPayload(false);
-      connectPeer.disabled = true;
-      if (channelMessage) channelMessage.textContent = 'Connecting to peer…';
-      const connectPayload = { peer_id: payload.peer_id };
+      const peerId = manualPeer && manualPeer.value.trim();
+      if (!peerId) throw new Error('Enter a peer node ID or endpoint.');
       const host = manualPeerHost && manualPeerHost.value.trim();
       const port = manualPeerPort && manualPeerPort.value.trim();
-      if (host) connectPayload.host = host;
-      if (port) connectPayload.port = port;
-      post('api/v1/peers/connect', connectPayload)
-        .then(function () { if (channelMessage) channelMessage.textContent = 'Peer connection requested.'; })
-        .catch(function (error) { if (channelMessage) channelMessage.textContent = error.message; })
-        .finally(function () { connectPeer.disabled = false; });
-    } catch (error) { if (channelMessage) channelMessage.textContent = error.message; }
+      connectPeerRequest(peerId, host, port, manualPeerMessage, manualConnectPeer).then(function () { loadPeers(true); });
+    } catch (error) { if (manualPeerMessage) manualPeerMessage.textContent = error.message; }
   });
 
   if (openChannel) openChannel.addEventListener('click', function () {
@@ -282,7 +294,7 @@
     if (!peerList) return;
     peerList.innerHTML = '';
     if (!peers.length) {
-      peerList.innerHTML = '<p class="muted">No gossip peers discovered yet. Use a manual node ID on the Channels page.</p>';
+      peerList.innerHTML = '<p class="muted">No gossip peers discovered yet. Use the manual connection form above.</p>';
       return;
     }
     peers.forEach(function (peer) {
@@ -292,12 +304,8 @@
       row.querySelector('strong').textContent = peer.alias || 'Unnamed peer';
       row.querySelector('small').textContent = peer.id;
       row.querySelector('button').addEventListener('click', function () {
-        row.querySelector('button').disabled = true;
         if (peerMessage) peerMessage.textContent = 'Connecting to ' + (peer.alias || peer.id.slice(0, 12)) + '…';
-        post('api/v1/peers/connect', { peer_id: peer.id })
-          .then(function () { if (peerMessage) peerMessage.textContent = 'Peer connection requested.'; })
-          .catch(function (error) { if (peerMessage) peerMessage.textContent = error.message; })
-          .finally(function () { row.querySelector('button').disabled = false; });
+        connectPeerRequest(peer.id, null, null, peerMessage, row.querySelector('button'));
       });
       peerList.appendChild(row);
     });

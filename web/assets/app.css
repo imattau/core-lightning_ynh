@@ -110,6 +110,9 @@ h3 { margin-bottom: 8px; font-size: 16px; }
 .workflow-actions .button { flex: 1; }
 .form-message { min-height: 16px; margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
 .peers-intro, .settings-intro { max-width: 680px; margin: 18px 0 0; line-height: 1.55; }
+.manual-peer-card { max-width: 760px; margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: #fafaf7; }
+.manual-peer-card h3 { margin-bottom: 5px; font-size: 13px; }
+.manual-peer-card p { margin-top: 0; }
 .peer-list { display: grid; gap: 8px; margin-top: 18px; }
 .peer-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fafaf7; }
 .peer-row strong, .peer-row small { display: block; }
