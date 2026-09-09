@@ -20,10 +20,11 @@ mnemonic is the node root secret, not a mutable setting. Export it with
 `lightning-hsmtool getsecret`, and protect `hsm_secret`, `emergency.recover`,
 and the latest database according to `doc/BACKUP.md`.
 
-For convenience, the panel has an explicit **Show recovery mnemonic** action.
-It prints the mnemonic only in that operation's output; use it deliberately,
-record the phrase offline, and clear the output immediately. The action never
-writes the phrase to YunoHost app settings or `lightningd.conf`.
+For convenience, the panel has an explicit recovery reveal checkbox. Enable it
+only while recording the phrase offline; the read-only value is hidden again
+when the panel is reloaded and is not written to YunoHost app settings or
+`lightningd.conf`. The operation-output export remains available as a CLI or
+fallback path; clear that output immediately after recording it.
 
 Removal is deliberately conservative: the package checks `listfunds` and
 refuses to remove itself while local wallet or channel funds are reported.

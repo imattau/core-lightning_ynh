@@ -105,9 +105,26 @@ services = ["__APP__"]
     name.fr = "Récupération"
     services = ["__APP__"]
 
+        [node.recovery.reveal_recovery]
+        ask.en = "I understand this will display the wallet recovery phrase"
+        ask.fr = "Je comprends que cela affichera la phrase de récupération du portefeuille"
+        type = "boolean"
+        default = false
+        bind = "null"
+        help.en = "Enable this temporarily to display the phrase in this panel. It is not stored by the package."
+
+        [node.recovery.recovery_mnemonic]
+        ask.en = "Wallet recovery phrase"
+        ask.fr = "Phrase de récupération du portefeuille"
+        type = "markdown"
+        readonly = true
+        redact = true
+        bind = "null"
+        visible = "reveal_recovery"
+
         [node.recovery.show_recovery_mnemonic]
-        ask.en = "Show recovery mnemonic"
-        ask.fr = "Afficher la phrase de récupération"
+        ask.en = "Export recovery mnemonic to operation output"
+        ask.fr = "Exporter la phrase de récupération dans la sortie de l'opération"
         type = "button"
         style = "warning"
         icon = "key"

@@ -285,13 +285,29 @@ run__show_channels() {
 	fi
 }
 
-run__show_recovery_mnemonic() {
+ynh_cln_recovery_secret() {
 	local hsmtool="$install_dir/bin/lightning-hsmtool" mnemonic
 	local hsm_secret="$data_dir/bitcoin/hsm_secret"
 	[ -x "$hsmtool" ] || hsmtool="$install_dir/tools/lightning-hsmtool"
-	[ -x "$hsmtool" ] || ynh_die "Core Lightning's lightning-hsmtool is not installed. Repair or upgrade the package first."
-	[ -r "$hsm_secret" ] || ynh_die "Core Lightning hsm_secret was not found at $hsm_secret. The node may not have completed first startup."
-	if ! mnemonic="$("$hsmtool" getsecret "$hsm_secret" 2>/dev/null)" || [ -z "$mnemonic" ]; then
+	[ -x "$hsmtool" ] || return 1
+	[ -r "$hsm_secret" ] || return 2
+	mnemonic="$("$hsmtool" getsecret "$hsm_secret" 2>/dev/null)" || return 3
+	[ -n "$mnemonic" ] || return 3
+	printf '%s' "$mnemonic"
+}
+
+get__recovery_mnemonic() {
+	local mnemonic
+	if mnemonic="$(ynh_cln_recovery_secret 2>/dev/null)"; then
+		printf '%s' "$mnemonic"
+	else
+		printf '%s' 'Recovery phrase is unavailable. Use the export action or check that the node completed its first startup.'
+	fi
+}
+
+run__show_recovery_mnemonic() {
+	local mnemonic
+	if ! mnemonic="$(ynh_cln_recovery_secret 2>/dev/null)"; then
 		ynh_die "Core Lightning could not export the recovery mnemonic. If this is an older node, use the legacy secret format documented in doc/BACKUP.md."
 	fi
 	# Config-panel actions must use YunoHost's print helpers: raw stdout from
