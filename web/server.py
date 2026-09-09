@@ -57,8 +57,8 @@ def rpc(method, *args, timeout=RPC_TIMEOUT):
         timeout=timeout,
     )
     if completed.returncode != 0:
-        detail = completed.stderr.strip().splitlines()
-        message = detail[-1] if detail else "Core Lightning RPC request failed"
+        detail = (completed.stderr.strip() or completed.stdout.strip()).splitlines()
+        message = detail[-1] if detail else "Core Lightning RPC request failed (exit code " + str(completed.returncode) + ")"
         raise RuntimeError("Core Lightning RPC failed: " + message[:500])
     try:
         return json.loads(completed.stdout)
@@ -551,8 +551,8 @@ class Handler(BaseHTTPRequestHandler):
                 for output in funds.get("outputs", [])
                 if output.get("status") == "confirmed"
             ) // 1000
-            if confirmed < amount:
-                raise RuntimeError("Insufficient confirmed CLN funds: " + str(confirmed) + " sats available.")
+            if confirmed <= amount:
+                raise RuntimeError("Channel amount must be below confirmed funds: " + str(confirmed) + " sats available; leave room for the funding fee.")
             result = rpc("fundchannel", peer_id, str(amount), "normal", str(public).lower())
             self.send_json(HTTPStatus.OK, result)
         except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
