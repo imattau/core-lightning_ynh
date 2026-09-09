@@ -366,6 +366,7 @@
   const settingFields = {
     alias: document.querySelector('#setting-alias'),
     min_capacity_sat: document.querySelector('#setting-min-capacity'),
+    min_emergency_sat: document.querySelector('#setting-min-emergency'),
     fee_base: document.querySelector('#setting-fee-base'),
     fee_per_sat: document.querySelector('#setting-fee-per-sat'),
     rgb: document.querySelector('#setting-rgb'),
@@ -380,6 +381,7 @@
         const values = Object.assign({
           alias: 'My YunoHost Lightning Node',
           min_capacity_sat: 10000,
+          min_emergency_sat: 25000,
           fee_base: 1000,
           fee_per_sat: 10,
           rgb: '',

@@ -39,6 +39,7 @@ NODE_SETTINGS = {
     "fee_base": {"rpc": "fee-base", "kind": "integer"},
     "fee_per_sat": {"rpc": "fee-per-satoshi", "kind": "integer"},
     "min_capacity_sat": {"rpc": "min-capacity-sat", "kind": "integer"},
+    "min_emergency_sat": {"rpc": "min-emergency-msat", "kind": "sat_msat"},
     "log_level": {"rpc": "log-level", "kind": "log_level"},
 }
 
@@ -314,6 +315,16 @@ def validate_node_setting(key, value):
         if value not in ("info", "debug", "io"):
             raise RuntimeError("Log level must be info, debug, or io")
         return value
+    if kind == "sat_msat":
+        if isinstance(value, bool):
+            raise RuntimeError("The emergency reserve must be an integer number of satoshis")
+        try:
+            number = int(value)
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("The emergency reserve must be an integer number of satoshis") from exc
+        if number < 0 or number > 2100000000:
+            raise RuntimeError("The emergency reserve must be between 0 and 2100000000 satoshis")
+        return str(number * 1000) + "msat"
     if isinstance(value, bool):
         raise RuntimeError("Node amount settings must be integers")
     try:
@@ -343,10 +354,24 @@ def node_settings():
             return record["values_int"][0]
         return None
 
+    def sats_from_msat(value):
+        if isinstance(value, dict):
+            value = value.get("msat") or value.get("millisatoshis") or value.get("amount_msat")
+        if isinstance(value, str):
+            value = value.removesuffix("msat")
+        try:
+            return int(value) // 1000
+        except (TypeError, ValueError):
+            return None
+
     result = {}
     for key, setting in NODE_SETTINGS.items():
         value = typed_value(values.get(setting["rpc"]))
         if value is not None:
+            if setting["kind"] == "sat_msat":
+                value = sats_from_msat(value)
+                if value is None:
+                    continue
             result[key] = value
     # getinfo is the authoritative live source for the two announcement
     # fields, and also keeps the form useful across CLN versions which omit
@@ -357,6 +382,7 @@ def node_settings():
     result.setdefault("fee_base", 1000)
     result.setdefault("fee_per_sat", 10)
     result.setdefault("min_capacity_sat", 10000)
+    result.setdefault("min_emergency_sat", 25000)
     result.setdefault("log_level", "info")
     return result
 
