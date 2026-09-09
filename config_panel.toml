@@ -121,14 +121,6 @@ services = ["__APP__"]
         bind = "null"
         visible = "reveal_recovery"
 
-        [node.recovery.show_recovery_mnemonic]
-        ask.en = "Export recovery mnemonic to operation output"
-        ask.fr = "Exporter la phrase de récupération dans la sortie de l'opération"
-        type = "button"
-        style = "warning"
-        icon = "key"
-        bind = "null"
-
     [node.channels]
     name.en = "Peers & channels"
     name.fr = "Pairs & canaux"

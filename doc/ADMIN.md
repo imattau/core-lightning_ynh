@@ -23,8 +23,7 @@ and the latest database according to `doc/BACKUP.md`.
 For convenience, the panel has an explicit recovery reveal checkbox. Enable it
 only while recording the phrase offline; the read-only value is hidden again
 when the panel is reloaded and is not written to YunoHost app settings or
-`lightningd.conf`. The operation-output export remains available as a CLI or
-fallback path; clear that output immediately after recording it.
+`lightningd.conf`. The phrase is not sent to YunoHost operation output.
 
 Removal is deliberately conservative: the package checks `listfunds` and
 refuses to remove itself while local wallet or channel funds are reported.

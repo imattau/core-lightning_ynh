@@ -305,18 +305,6 @@ get__recovery_mnemonic() {
 	fi
 }
 
-run__show_recovery_mnemonic() {
-	local mnemonic
-	if ! mnemonic="$(ynh_cln_recovery_secret 2>/dev/null)"; then
-		ynh_die "Core Lightning could not export the recovery mnemonic. If this is an older node, use the legacy secret format documented in doc/BACKUP.md."
-	fi
-	# Config-panel actions must use YunoHost's print helpers: raw stdout from
-	# the action is not reliably surfaced by the web-admin operation view.
-	ynh_print_warn "The next output contains the wallet recovery mnemonic. Do not copy it into tickets, screenshots, shell history, or ordinary logs."
-	ynh_print_warn "Anyone with this mnemonic may be able to steal funds. Record it offline, then clear this operation output."
-	ynh_print_warn "Recovery mnemonic: $mnemonic"
-}
-
 get__grpc_enabled() {
 	ynh_cln_setting grpc_enabled false
 }

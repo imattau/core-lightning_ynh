@@ -15,5 +15,5 @@ Secure key backups must be kept separately from ordinary YunoHost backups. Anyon
 The config panel reports only whether expected backup files are present; it
 does not store the mnemonic. Temporarily acknowledge the recovery warning in
 the panel to display the phrase inline, or export it with
-`lightning-hsmtool getsecret`, and keep it offline. Clear any operation output
-immediately after recording it.
+`lightning-hsmtool getsecret`, and keep it offline. The package does not send
+the phrase to YunoHost operation output.
