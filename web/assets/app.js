@@ -15,6 +15,51 @@
     });
   });
 
+  const contentGrid = document.querySelector('.content-grid');
+  const viewNames = ['home', 'wallet', 'channels', 'peers', 'node', 'backup', 'settings'];
+  const navLinks = Array.from(document.querySelectorAll('.nav-item, .mobile-nav a'));
+
+  function showView(name) {
+    const view = viewNames.indexOf(name) >= 0 ? name : 'home';
+    document.querySelectorAll('[data-view]').forEach(function (element) {
+      element.hidden = element.getAttribute('data-view') !== view;
+    });
+    if (contentGrid) {
+      contentGrid.hidden = view !== 'channels' && view !== 'node';
+    }
+    navLinks.forEach(function (link) {
+      const active = link.getAttribute('href') === '#' + view;
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    if (window.location.hash !== '#' + view) {
+      window.history.replaceState(null, '', '#' + view);
+    }
+    if (view === 'settings') loadSettings();
+    if (view === 'peers') loadPeers();
+  }
+
+  function routeFromHash() {
+    showView((window.location.hash || '#home').slice(1));
+  }
+
+  window.addEventListener('hashchange', routeFromHash);
+  navLinks.forEach(function (link) {
+    link.addEventListener('click', function () {
+      const target = (link.getAttribute('href') || '#home').slice(1);
+      showView(target);
+      sidebar.classList.remove('open');
+      menu.setAttribute('aria-expanded', 'false');
+    });
+  });
+  document.querySelectorAll('[data-target]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      showView(button.getAttribute('data-target'));
+    });
+  });
+  routeFromHash();
+
   const address = document.querySelector('#deposit-address');
   const generate = document.querySelector('#generate-address');
   const copy = document.querySelector('#copy-address');
@@ -128,6 +173,8 @@
   const connectPeer = document.querySelector('#connect-peer');
   const openChannel = document.querySelector('#open-channel');
   const channelMessage = document.querySelector('#channel-message');
+  const peerList = document.querySelector('#peer-list');
+  const peerMessage = document.querySelector('#peer-message');
 
   function selectedPeer() {
     return (manualPeer && manualPeer.value.trim()) || (peerSelect && peerSelect.value) || '';
@@ -178,17 +225,100 @@
     } catch (error) { if (channelMessage) channelMessage.textContent = error.message; }
   });
 
-  fetch('api/v1/peers/discovered')
-    .then(function (response) { if (!response.ok) throw new Error('Peer discovery unavailable'); return response.json(); })
-    .then(function (data) {
+  function renderPeers(peers) {
+    if (peerSelect) {
       if (!peerSelect) return;
       peerSelect.innerHTML = '<option value="">Select a discovered peer</option>';
-      (data.peers || []).forEach(function (peer) {
+      peers.forEach(function (peer) {
         const option = document.createElement('option');
         option.value = peer.id;
         option.textContent = (peer.alias || 'Unnamed peer') + ' · ' + peer.id.slice(0, 12) + '…';
         peerSelect.appendChild(option);
       });
-    })
-    .catch(function () { if (peerSelect) peerSelect.innerHTML = '<option value="">No discovered peers — use manual ID</option>'; });
+    }
+    if (!peerList) return;
+    peerList.innerHTML = '';
+    if (!peers.length) {
+      peerList.innerHTML = '<p class="muted">No gossip peers discovered yet. Use a manual node ID on the Channels page.</p>';
+      return;
+    }
+    peers.forEach(function (peer) {
+      const row = document.createElement('div');
+      row.className = 'peer-row';
+      row.innerHTML = '<div><strong></strong><small></small></div><button class="button button-light" type="button">Connect</button>';
+      row.querySelector('strong').textContent = peer.alias || 'Unnamed peer';
+      row.querySelector('small').textContent = peer.id;
+      row.querySelector('button').addEventListener('click', function () {
+        row.querySelector('button').disabled = true;
+        if (peerMessage) peerMessage.textContent = 'Connecting to ' + (peer.alias || peer.id.slice(0, 12)) + '…';
+        post('api/v1/peers/connect', { peer_id: peer.id })
+          .then(function () { if (peerMessage) peerMessage.textContent = 'Peer connection requested.'; })
+          .catch(function (error) { if (peerMessage) peerMessage.textContent = error.message; })
+          .finally(function () { row.querySelector('button').disabled = false; });
+      });
+      peerList.appendChild(row);
+    });
+  }
+
+  function loadPeers() {
+    if (peerMessage) peerMessage.textContent = 'Loading discovered peers…';
+    fetch('api/v1/peers/discovered')
+      .then(function (response) { if (!response.ok) throw new Error('Peer discovery unavailable'); return response.json(); })
+      .then(function (data) { renderPeers(data.peers || []); if (peerMessage) peerMessage.textContent = ''; })
+      .catch(function (error) {
+        if (peerSelect) peerSelect.innerHTML = '<option value="">No discovered peers — use manual ID</option>';
+        if (peerList) peerList.innerHTML = '<p class="muted">' + error.message + '</p>';
+        if (peerMessage) peerMessage.textContent = '';
+      });
+  }
+
+  const refreshPeers = document.querySelector('#refresh-peers');
+  if (refreshPeers) refreshPeers.addEventListener('click', loadPeers);
+  loadPeers();
+
+  const settingsState = document.querySelector('#settings-state');
+  const settingsMessage = document.querySelector('#settings-message');
+  const settingFields = {
+    alias: document.querySelector('#setting-alias'),
+    min_capacity_sat: document.querySelector('#setting-min-capacity'),
+    fee_base: document.querySelector('#setting-fee-base'),
+    fee_per_sat: document.querySelector('#setting-fee-per-sat'),
+    rgb: document.querySelector('#setting-rgb'),
+    log_level: document.querySelector('#setting-log-level')
+  };
+
+  function loadSettings() {
+    if (settingsState) settingsState.textContent = 'Loading…';
+    fetch('api/v1/node/settings')
+      .then(function (response) { return response.json().then(function (data) { if (!response.ok) throw new Error(data.error || 'Unable to read node settings'); return data; }); })
+      .then(function (data) {
+        const values = data.settings || {};
+        Object.keys(settingFields).forEach(function (key) {
+          if (settingFields[key] && values[key] !== undefined) settingFields[key].value = values[key];
+        });
+        if (settingsState) settingsState.textContent = 'Runtime values';
+        if (settingsMessage) settingsMessage.textContent = '';
+      })
+      .catch(function (error) { if (settingsState) settingsState.textContent = 'Unavailable'; if (settingsMessage) settingsMessage.textContent = error.message; });
+  }
+
+  function saveSettings() {
+    const settings = {};
+    Object.keys(settingFields).forEach(function (key) {
+      const field = settingFields[key];
+      if (field && field.value !== '') settings[key] = field.value;
+    });
+    const save = document.querySelector('#save-settings');
+    if (save) save.disabled = true;
+    if (settingsMessage) settingsMessage.textContent = 'Applying settings…';
+    post('api/v1/node/settings', { settings: settings })
+      .then(function () { if (settingsMessage) settingsMessage.textContent = 'Settings applied to the running node.'; if (settingsState) settingsState.textContent = 'Saved'; })
+      .catch(function (error) { if (settingsMessage) settingsMessage.textContent = error.message; })
+      .finally(function () { if (save) save.disabled = false; });
+  }
+
+  const saveSettingsButton = document.querySelector('#save-settings');
+  const reloadSettingsButton = document.querySelector('#reload-settings');
+  if (saveSettingsButton) saveSettingsButton.addEventListener('click', saveSettings);
+  if (reloadSettingsButton) reloadSettingsButton.addEventListener('click', loadSettings);
 })();

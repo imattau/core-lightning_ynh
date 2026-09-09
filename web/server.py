@@ -24,6 +24,15 @@ HSMTOOL = os.environ.get("CLN_HSMTOOL", "lightning-hsmtool")
 HSM_SECRET = os.environ.get("CLN_HSM_SECRET", "")
 RPC_TIMEOUT = 15
 NODE_ID_RE = re.compile(r"^[0-9a-fA-F]{66}$")
+NODE_SETTINGS = {
+    "alias": {"rpc": "alias", "kind": "string"},
+    "announce_addr": {"rpc": "announce-addr", "kind": "string"},
+    "rgb": {"rpc": "rgb", "kind": "rgb"},
+    "fee_base": {"rpc": "fee-base", "kind": "integer"},
+    "fee_per_sat": {"rpc": "fee-per-satoshi", "kind": "integer"},
+    "min_capacity_sat": {"rpc": "min-capacity-sat", "kind": "integer"},
+    "log_level": {"rpc": "log-level", "kind": "log_level"},
+}
 
 
 def rpc(method, *args):
@@ -98,6 +107,49 @@ def validate_channel_amount(value):
     if amount < 546 or amount > 16777215:
         raise RuntimeError("Channel amount must be between 546 and 16777215 satoshis")
     return amount
+
+
+def validate_node_setting(key, value):
+    setting = NODE_SETTINGS.get(key)
+    if not setting:
+        raise RuntimeError("Unsupported node setting")
+    kind = setting["kind"]
+    if kind == "string":
+        if not isinstance(value, str) or len(value) > 255:
+            raise RuntimeError("This node setting must be text no longer than 255 characters")
+        if key == "announce_addr" and any(char.isspace() for char in value):
+            raise RuntimeError("The announce address must not contain whitespace")
+        return value
+    if kind == "rgb":
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-fA-F]{6}", value):
+            raise RuntimeError("Node color must be exactly six hexadecimal characters")
+        return value.upper()
+    if kind == "log_level":
+        if value not in ("info", "debug", "io"):
+            raise RuntimeError("Log level must be info, debug, or io")
+        return value
+    if isinstance(value, bool):
+        raise RuntimeError("Node amount settings must be integers")
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("Node amount settings must be integers") from exc
+    if number < 0 or number > 16777215:
+        raise RuntimeError("Node amount settings must be between 0 and 16777215")
+    return str(number)
+
+
+def node_settings():
+    configs = rpc("listconfigs")
+    values = configs.get("configs", configs)
+    result = {}
+    for key, setting in NODE_SETTINGS.items():
+        value = values.get(setting["rpc"])
+        if isinstance(value, dict):
+            value = value.get("value")
+        if value is not None:
+            result[key] = value
+    return result
 
 
 def validate_origin(handler):
@@ -192,13 +244,16 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/v1/health":
                 self.send_json(HTTPStatus.OK, {"ok": True})
                 return
+            if path == "/api/v1/node/settings":
+                self.send_json(HTTPStatus.OK, {"settings": node_settings()})
+                return
             self.serve_static(path)
         except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
             self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc)})
 
     def do_POST(self):  # noqa: N802 - BaseHTTPRequestHandler API
         path = urlparse(self.path).path
-        if path not in ("/api/v1/wallet/address", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal"):
+        if path not in ("/api/v1/wallet/address", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal", "/api/v1/node/settings"):
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
             return
         try:
@@ -208,6 +263,15 @@ class Handler(BaseHTTPRequestHandler):
                 if payload.get("confirm") is not True:
                     raise RuntimeError("Explicit recovery phrase confirmation is required")
                 self.send_json(HTTPStatus.OK, {"recovery_phrase": recovery_secret()})
+                return
+            if path == "/api/v1/node/settings":
+                if not isinstance(payload.get("settings"), dict) or not payload["settings"]:
+                    raise RuntimeError("No node settings were provided")
+                updated = {}
+                for key, value in payload["settings"].items():
+                    validated = validate_node_setting(key, value)
+                    updated[key] = rpc("setconfig", NODE_SETTINGS[key]["rpc"], validated)
+                self.send_json(HTTPStatus.OK, {"updated": list(updated), "settings": node_settings()})
                 return
             if path == "/api/v1/wallet/address":
                 address = rpc("newaddr", "bech32")

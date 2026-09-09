@@ -17,6 +17,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; background: var(--bg); }
 button, a { font: inherit; }
@@ -107,6 +108,14 @@ h3 { margin-bottom: 8px; font-size: 16px; }
 .workflow-actions { display: flex; gap: 8px; margin-top: 17px; }
 .workflow-actions .button { flex: 1; }
 .form-message { min-height: 16px; margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.peers-intro, .settings-intro { max-width: 680px; margin: 18px 0 0; line-height: 1.55; }
+.peer-list { display: grid; gap: 8px; margin-top: 18px; }
+.peer-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fafaf7; }
+.peer-row strong, .peer-row small { display: block; }
+.peer-row strong { font-size: 12px; }
+.peer-row small { overflow-wrap: anywhere; margin-top: 4px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 20px; }
+.settings-grid label { min-width: 0; }
 .recovery-panel { margin-bottom: 18px; }
 .recovery-copy { max-width: 700px; margin-top: 18px; }
 .recovery-copy > p:first-child { margin-bottom: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
@@ -163,6 +172,7 @@ h3 { margin-bottom: 8px; font-size: 16px; }
   .address-actions { width: 100%; }
   .address-actions .button { flex: 1; }
   .form-grid { grid-template-columns: 1fr; }
+  .settings-grid { grid-template-columns: 1fr; }
   .workflow-actions { flex-direction: column; }
   .recovery-copy .workflow-actions { flex-direction: column; }
   .quick-actions { grid-template-columns: 1fr; }

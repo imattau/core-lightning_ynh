@@ -39,20 +39,20 @@
         </div>
         <div class="topbar-actions">
           <span class="status-pill online"><i></i>Online</span>
-          <button class="avatar" type="button" aria-label="Account menu">CL</button>
+          <button class="avatar" data-target="settings" type="button" aria-label="Account menu">CL</button>
         </div>
       </header>
 
-      <section class="notice" aria-label="Setup status">
+      <section class="notice" data-view="home" aria-label="Setup status">
         <div class="notice-icon">⚡</div>
         <div>
           <strong>Finish setting up your node</strong>
           <p>Fund the on-chain wallet, then open your first channel to start using Lightning.</p>
         </div>
-        <button class="button button-dark" type="button">View next step</button>
+        <button class="button button-dark" data-target="wallet" type="button">View next step</button>
       </section>
 
-      <section class="balance-grid" aria-label="Node balances">
+      <section class="balance-grid" data-view="home" aria-label="Node balances">
         <article class="balance-card featured">
           <div class="card-label">Total balance <span class="info">i</span></div>
           <div class="balance-value"><span id="total-balance">0</span> <small>sats</small></div>
@@ -70,7 +70,7 @@
         </article>
       </section>
 
-      <section class="panel wallet-panel" id="wallet">
+      <section class="panel wallet-panel view-panel" id="wallet" data-view="wallet">
         <div class="panel-heading">
           <div>
             <p class="eyebrow">On-chain wallet</p>
@@ -91,7 +91,7 @@
       </section>
 
       <section class="content-grid">
-        <article class="panel channels-panel">
+        <article class="panel channels-panel view-panel" id="channels" data-view="channels">
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Network</p>
@@ -126,7 +126,7 @@
           </div>
         </article>
 
-        <article class="panel status-panel">
+        <article class="panel status-panel view-panel" id="node" data-view="node">
           <div class="panel-heading">
             <div>
               <p class="eyebrow">System</p>
@@ -144,7 +144,20 @@
         </article>
       </section>
 
-      <section class="panel recovery-panel" id="backup">
+      <section class="panel view-panel" id="peers" data-view="peers" hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Network</p>
+            <h2>Peers</h2>
+          </div>
+          <button class="button button-light" id="refresh-peers" type="button">Refresh peers</button>
+        </div>
+        <p class="muted peers-intro">Choose a discovered node to connect, or use the Channels page for a manual peer connection.</p>
+        <div class="peer-list" id="peer-list"><p class="muted">Loading discovered peers…</p></div>
+        <p class="form-message" id="peer-message" role="status"></p>
+      </section>
+
+      <section class="panel recovery-panel view-panel" id="backup" data-view="backup">
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Emergency access</p>
@@ -167,7 +180,31 @@
         </div>
       </section>
 
-      <section class="panel quick-panel">
+      <section class="panel view-panel settings-panel" id="settings" data-view="settings" hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Node configuration</p>
+            <h2>Settings</h2>
+          </div>
+          <span class="status-pill" id="settings-state">Runtime values</span>
+        </div>
+        <p class="muted settings-intro">These values are applied to the running Core Lightning node. The channel amount is chosen when you open a channel; the minimum capacity and routing fees are node-wide defaults.</p>
+        <div class="settings-grid">
+          <label><span class="field-label">Node alias</span><input class="field-input" id="setting-alias" type="text" maxlength="255"></label>
+          <label><span class="field-label">Minimum channel capacity (sats)</span><input class="field-input" id="setting-min-capacity" type="number" min="0" max="16777215"></label>
+          <label><span class="field-label">Routing base fee (msats)</span><input class="field-input" id="setting-fee-base" type="number" min="0" max="16777215"></label>
+          <label><span class="field-label">Routing proportional fee (millionths)</span><input class="field-input" id="setting-fee-per-sat" type="number" min="0" max="16777215"></label>
+          <label><span class="field-label">Node color</span><input class="field-input" id="setting-rgb" type="text" inputmode="text" maxlength="6" placeholder="Optional six hex characters"></label>
+          <label><span class="field-label">Log level</span><select class="field-input" id="setting-log-level"><option value="info">Info</option><option value="debug">Debug</option><option value="io">IO</option></select></label>
+        </div>
+        <div class="workflow-actions">
+          <button class="button button-light" id="reload-settings" type="button">Reload</button>
+          <button class="button button-yellow" id="save-settings" type="button">Save settings</button>
+        </div>
+        <p class="form-message" id="settings-message" role="status"></p>
+      </section>
+
+      <section class="panel quick-panel view-panel" data-view="home">
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Shortcuts</p>
@@ -175,9 +212,9 @@
           </div>
         </div>
         <div class="quick-actions">
-          <button class="quick-action" type="button"><span class="quick-icon yellow">₿</span><span><strong>Deposit bitcoin</strong><small>Generate an address and QR code</small></span><b>→</b></button>
-          <button class="quick-action" type="button"><span class="quick-icon blue">↔</span><span><strong>Connect a peer</strong><small>Find a Lightning node to connect to</small></span><b>→</b></button>
-          <button class="quick-action" type="button"><span class="quick-icon purple">▣</span><span><strong>Check your backup</strong><small>Keep your recovery information safe</small></span><b>→</b></button>
+          <button class="quick-action" data-target="wallet" type="button"><span class="quick-icon yellow">₿</span><span><strong>Deposit bitcoin</strong><small>Generate an address and QR code</small></span><b>→</b></button>
+          <button class="quick-action" data-target="peers" type="button"><span class="quick-icon blue">↔</span><span><strong>Connect a peer</strong><small>Find a Lightning node to connect to</small></span><b>→</b></button>
+          <button class="quick-action" data-target="backup" type="button"><span class="quick-icon purple">▣</span><span><strong>Check your backup</strong><small>Keep your recovery information safe</small></span><b>→</b></button>
         </div>
       </section>
 
