@@ -5,7 +5,9 @@
 For the normal Alby Hub + CLN workflow, open the Core Lightning app's
 YunoHost config panel and use **Peers & channels**:
 
-1. Enter the peer's 66-character node ID, host, and P2P port.
+1. Leave **Peer selection** on **Discovered** and choose a peer from the
+   discovered list. Core Lightning supplies the peer's address through gossip
+   or DNS.
 2. Click **Generate deposit address** and send on-chain Bitcoin to the
    displayed address.
 3. Wait for the transaction to confirm in Core Lightning.
@@ -20,6 +22,10 @@ YunoHost config panel and use **Peers & channels**:
 The amount is taken from Core Lightning's confirmed on-chain wallet balance,
 not from an Alby Hub embedded wallet. A channel is usable by Alby Hub only
 after the funding transaction reaches the required confirmation state.
+
+If no peers are discovered, select **Manual** peer selection and enter the
+peer's 66-character node ID, host, and P2P port. A fresh CLN node may need an
+initial bootstrap peer before gossip can populate the discovered list.
 
 The panel deliberately does not provide close, invoice, payment, or liquidity
 management actions yet. Those remain available through CLN's RPC for advanced

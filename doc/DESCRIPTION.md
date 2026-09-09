@@ -7,7 +7,8 @@ administrative RPC on a local Unix socket.
 
 The package does not provide a web wallet interface and does not make
 financial decisions for the operator: it does not automatically open
-channels, select peers, manage liquidity, or pay invoices.
+channels or choose a peer, manage liquidity, or pay invoices. Its YunoHost
+config panel can display gossip-discovered peers for the operator to select.
 
 Before using real funds, read the package backup and recovery documentation.
 Lightning key material and channel state require more care than an ordinary

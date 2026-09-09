@@ -117,31 +117,58 @@ services = ["__APP__"]
     name.en = "Peers & channels"
     name.fr = "Pairs & canaux"
 
+        [node.channels.peer_mode]
+        ask.en = "Peer selection"
+        ask.fr = "Sélection du pair"
+        type = "select"
+        choices = ["discovered", "manual"]
+        default = "discovered"
+        bind = "null"
+
+        [node.channels.peer_discovery_status]
+        ask.en = "Peer discovery status"
+        ask.fr = "État de la découverte des pairs"
+        type = "alert"
+        style = "info"
+        bind = "null"
+
         [node.channels.peer_id]
-        ask.en = "Peer node ID"
+        ask.en = "Discovered peer"
+        ask.fr = "Pair découvert"
+        type = "select"
+        choices = []
+        optional = true
+        bind = "null"
+        visible = "peer_mode == 'discovered'"
+
+        [node.channels.manual_peer_id]
+        ask.en = "Manual peer node ID"
         ask.fr = "Identifiant du pair"
         type = "string"
         optional = true
         bind = "null"
         pattern.regexp = '^[0-9A-Fa-f]{66}$'
         pattern.error.en = "Enter a 66-character hexadecimal node ID."
+        visible = "peer_mode == 'manual'"
 
-        [node.channels.peer_host]
-        ask.en = "Peer host or IP address"
-        ask.fr = "Hôte ou adresse IP du pair"
+        [node.channels.manual_peer_host]
+        ask.en = "Manual peer host or IP address"
+        ask.fr = "Hôte ou adresse IP manuel du pair"
         type = "string"
         optional = true
         bind = "null"
-        help.en = "The peer's reachable host name or IP address."
+        help.en = "Only needed when the peer is not reachable through gossip or DNS."
+        visible = "peer_mode == 'manual'"
 
-        [node.channels.peer_port]
-        ask.en = "Peer P2P port"
-        ask.fr = "Port P2P du pair"
+        [node.channels.manual_peer_port]
+        ask.en = "Manual peer P2P port"
+        ask.fr = "Port P2P manuel du pair"
         type = "number"
         min = 1
         max = 65535
         default = 9735
         bind = "null"
+        visible = "peer_mode == 'manual'"
 
         [node.channels.channel_amount_sat]
         ask.en = "Channel amount (satoshis)"
@@ -175,7 +202,7 @@ services = ["__APP__"]
         style = "info"
         icon = "plug"
         bind = "null"
-        enabled = "peer_id && peer_host && peer_port"
+        enabled = "(peer_mode == 'discovered' && peer_id) || (peer_mode == 'manual' && manual_peer_id && manual_peer_host && manual_peer_port)"
 
         [node.channels.generate_deposit_address]
         ask.en = "Generate deposit address"
@@ -192,7 +219,7 @@ services = ["__APP__"]
         style = "warning"
         icon = "exchange"
         bind = "null"
-        enabled = "peer_id && channel_amount_sat && confirm_channel_open"
+        enabled = "(((peer_mode == 'discovered' && peer_id) || (peer_mode == 'manual' && manual_peer_id)) && channel_amount_sat && confirm_channel_open)"
 
         [node.channels.show_channels]
         ask.en = "Show channels"

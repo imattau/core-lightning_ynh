@@ -94,21 +94,92 @@ set__min_capacity_sat() {
 	ynh_cln_restart_and_check min_capacity_sat
 }
 
+ynh_cln_peer_choices() {
+	local nodes
+	nodes="$(ynh_cln_rpc listnodes 2>/dev/null)" || {
+		printf '%s\n' '[]'
+		return 0
+	}
+	printf '%s' "$nodes" | jq -c '
+		[.nodes[]?
+		 | select((.nodeid // "") | test("^[0-9A-Fa-f]{66}$"))
+		 | select((.addresses // []) | length > 0)
+		 | {key: .nodeid, timestamp: (.last_timestamp // 0),
+		    value: ((.alias // "Unnamed peer") + " — " +
+		      ((.addresses // [])
+		       | map((.type // "address") + ":" + (.address // "?") + ":" + ((.port // 0) | tostring))
+		       | join(", ")))}]
+		| sort_by(.timestamp)
+		| reverse
+		| .[0:50]
+		| map({key: .key, value: .value})
+		| from_entries' 2>/dev/null || printf '%s\n' '[]'
+}
+
+get__peer_discovery_status() {
+	local count
+	if ! ynh_cln_healthcheck >/dev/null 2>&1; then
+		cat <<'EOF'
+style: warning
+ask:
+  en: Peer discovery is unavailable while Core Lightning RPC is offline. You can still use manual peer mode.
+  fr: La découverte des pairs est indisponible lorsque le RPC de Core Lightning est hors ligne. Vous pouvez utiliser le mode manuel.
+EOF
+		return 0
+	fi
+	count="$(ynh_cln_peer_choices | jq 'length' 2>/dev/null || echo 0)"
+	if [ "$count" -gt 0 ]; then
+		printf 'style: info\nask:\n  en: "%s public peers discovered. Select one below; CLN will resolve its address through gossip or DNS."\n  fr: "%s pairs publics découverts. Sélectionnez-en un; CLN résoudra son adresse via le gossip ou le DNS."\n' "$count" "$count"
+	else
+		cat <<'EOF'
+style: warning
+ask:
+  en: No public peers with advertised addresses were discovered. Use manual peer mode or connect a bootstrap peer first.
+  fr: Aucun pair public avec une adresse annoncée n'a été découvert. Utilisez le mode manuel ou connectez d'abord un pair d'amorçage.
+EOF
+	fi
+}
+
+get__peer_id() {
+	local choices
+	choices="$(ynh_cln_peer_choices)"
+	printf 'choices: %s\n' "$choices"
+}
+
+ynh_cln_select_peer() {
+	case "$peer_mode" in
+		discovered)
+			peer_host=''
+			peer_port=''
+			;;
+		manual)
+			peer_id="$manual_peer_id"
+			peer_host="$manual_peer_host"
+			peer_port="$manual_peer_port"
+			;;
+		*) ynh_die "Choose discovered or manual peer selection" ;;
+	esac
+}
+
 ynh_cln_validate_channel_inputs() {
 	case "$peer_id" in
 		''|*[!0-9A-Fa-f]*) ynh_die "Peer node ID must be 66 hexadecimal characters" ;;
 	esac
 	[ "${#peer_id}" -eq 66 ] || ynh_die "Peer node ID must be 66 hexadecimal characters"
 
-	[ -n "$peer_host" ] || ynh_die "Peer host or IP address is required"
-	case "$peer_host" in
-		*[[:space:]]*) ynh_die "Peer host or IP address must not contain whitespace" ;;
-	esac
+	if [ "$peer_mode" = "manual" ]; then
+		[ -n "$peer_host" ] || ynh_die "Peer host or IP address is required in manual peer mode"
+		case "$peer_host" in
+			*[[:space:]]*) ynh_die "Peer host or IP address must not contain whitespace" ;;
+		esac
+	fi
 
-	case "$peer_port" in
-		''|*[!0-9]*) ynh_die "Peer P2P port must be numeric" ;;
-	esac
-	[ "$peer_port" -ge 1 ] && [ "$peer_port" -le 65535 ] || ynh_die "Peer P2P port must be between 1 and 65535"
+	if [ "$peer_mode" = "manual" ]; then
+		case "$peer_port" in
+			''|*[!0-9]*) ynh_die "Peer P2P port must be numeric" ;;
+		esac
+		[ "$peer_port" -ge 1 ] && [ "$peer_port" -le 65535 ] || ynh_die "Peer P2P port must be between 1 and 65535"
+	fi
 }
 
 ynh_cln_normalize_channel_options() {
@@ -152,9 +223,17 @@ ynh_cln_print_channel_result() {
 
 run__connect_peer() {
 	local result
+	ynh_cln_select_peer
 	ynh_cln_validate_channel_inputs
 	if ynh_cln_peer_is_connected; then
 		ynh_print_info "Peer $peer_id is already connected."
+		return 0
+	fi
+	if [ "$peer_mode" = "discovered" ]; then
+		if ! result="$(ynh_cln_rpc connect "$peer_id" 2>&1)"; then
+			ynh_die "Core Lightning could not resolve or connect to discovered peer $peer_id: $result"
+		fi
+		ynh_print_info "Connected to discovered peer $peer_id using gossip/DNS address resolution."
 		return 0
 	fi
 	if ! result="$(ynh_cln_rpc connect "$peer_id" "$peer_host" "$peer_port" 2>&1)"; then
@@ -176,6 +255,7 @@ run__generate_deposit_address() {
 
 run__open_channel() {
 	local result available
+	ynh_cln_select_peer
 	ynh_cln_validate_channel_inputs
 	ynh_cln_validate_channel_amount
 	ynh_cln_normalize_channel_options
