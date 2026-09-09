@@ -62,6 +62,7 @@ ynh_cln_configure_web_service() {
 		"/etc/systemd/system/$web_service_name.service"
 	ynh_cln_write_web_env
 	systemctl daemon-reload
+	systemctl enable "$web_service_name.service" >/dev/null
 }
 
 ynh_cln_install_web_assets() {
