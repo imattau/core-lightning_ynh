@@ -143,24 +143,35 @@ def node_settings():
     configs = rpc("listconfigs")
     values = configs.get("configs", configs)
     if isinstance(values, list):
-        values = {
-            item.get("config"): item
-            for item in values
-            if isinstance(item, dict) and item.get("config")
-        }
+        values = {item.get("config"): item for item in values if isinstance(item, dict) and item.get("config")}
+
+    def typed_value(record):
+        if not isinstance(record, dict):
+            return record
+        for field in ("value_str", "value_int", "value_msat", "value_bool", "value"):
+            if field in record:
+                return record[field]
+        if record.get("values_str"):
+            return record["values_str"][0]
+        if record.get("values_int"):
+            return record["values_int"][0]
+        return None
+
     result = {}
     for key, setting in NODE_SETTINGS.items():
-        value = values.get(setting["rpc"])
-        if isinstance(value, dict):
-            # CLN returns typed values (value_str/value_int/value_msat) in
-            # listconfigs/setconfig responses, while older versions exposed
-            # a plain value in a few response shapes.
-            for field in ("value_str", "value_int", "value_msat", "value_bool", "value"):
-                if field in value:
-                    value = value[field]
-                    break
+        value = typed_value(values.get(setting["rpc"]))
         if value is not None:
             result[key] = value
+    # getinfo is the authoritative live source for the two announcement
+    # fields, and also keeps the form useful across CLN versions which omit
+    # default-valued records from listconfigs.
+    info = rpc("getinfo")
+    result.setdefault("alias", info.get("alias"))
+    result.setdefault("rgb", info.get("color"))
+    result.setdefault("fee_base", 1000)
+    result.setdefault("fee_per_sat", 10)
+    result.setdefault("min_capacity_sat", 10000)
+    result.setdefault("log_level", "info")
     return result
 
 
