@@ -13,6 +13,7 @@ import random
 import socket
 import struct
 import subprocess
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -29,6 +30,7 @@ BITCOIN_CLI = os.environ.get("CLN_BITCOIN_CLI", "bitcoin-cli")
 BITCOIN_CONFIG_FILE = os.environ.get("CLN_BITCOIN_CONFIG_FILE", "")
 BITCOIN_DATA_DIR = os.environ.get("CLN_BITCOIN_DATA_DIR", "")
 RPC_TIMEOUT = 15
+RECOVERY_LOCK = threading.Lock()
 NODE_ID_RE = re.compile(r"^[0-9a-fA-F]{66}$")
 BOOTSTRAP_SEEDS = ("lseed.bitcoinstats.com", "nodes.lightning.directory", "soa.nodes.lightning.directory")
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
@@ -240,6 +242,27 @@ def recovery_secret():
     if completed.returncode != 0 or not completed.stdout.strip():
         raise RuntimeError("Recovery phrase is unavailable")
     return completed.stdout.strip()
+
+
+def validate_recovery_phrase(value):
+    """Validate a CLN v25.12+ mnemonic without retaining it anywhere."""
+    if not isinstance(value, str):
+        raise RuntimeError("Enter the 12-word Core Lightning recovery phrase")
+    phrase = " ".join(value.split())
+    if not re.fullmatch(r"[a-z]+(?: [a-z]+){11}", phrase):
+        raise RuntimeError("Enter the 12 lowercase words from the Core Lightning recovery phrase")
+    return phrase
+
+
+def recover_unused_node(phrase):
+    """Validate and recover only when CLN says the node is still unused."""
+    with RECOVERY_LOCK:
+        # `check recover` performs CLN's own safety checks without changing
+        # the node.  In particular, CLN rejects nodes with issued addresses
+        # or channels, which prevents this UI from wiping a used wallet.
+        rpc("check", "command_to_check=recover", "hsmsecret=" + phrase)
+        rpc("recover", "hsmsecret=" + phrase)
+    return {"recovering": True, "message": "Recovery accepted. Core Lightning is restarting with the supplied wallet."}
 
 
 def json_bytes(value):
@@ -500,7 +523,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):  # noqa: N802 - BaseHTTPRequestHandler API
         path = urlparse(self.path).path
-        if path not in ("/api/v1/wallet/address", "/api/v1/peers/bootstrap", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal", "/api/v1/node/settings"):
+        if path not in ("/api/v1/wallet/address", "/api/v1/peers/bootstrap", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal", "/api/v1/recovery/restore", "/api/v1/node/settings"):
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
             return
         try:
@@ -510,6 +533,12 @@ class Handler(BaseHTTPRequestHandler):
                 if payload.get("confirm") is not True:
                     raise RuntimeError("Explicit recovery phrase confirmation is required")
                 self.send_json(HTTPStatus.OK, {"recovery_phrase": recovery_secret()})
+                return
+            if path == "/api/v1/recovery/restore":
+                if payload.get("confirm") is not True:
+                    raise RuntimeError("Explicit confirmation is required to replace the unused wallet")
+                phrase = validate_recovery_phrase(payload.get("recovery_phrase"))
+                self.send_json(HTTPStatus.OK, recover_unused_node(phrase))
                 return
             if path == "/api/v1/node/settings":
                 if not isinstance(payload.get("settings"), dict) or not payload["settings"]:

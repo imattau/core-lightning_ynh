@@ -186,6 +186,17 @@
             <code id="recovery-phrase" aria-live="polite"></code>
             <p class="muted">This phrase is only held in this page until you reload it. Do not save it to a cloud service or send it to anyone.</p>
           </div>
+          <div class="recovery-restore">
+            <h3>Restore an unused node</h3>
+            <p class="muted">Only use this on a fresh node with no issued addresses or channels. CLN will replace the current unused wallet and restart.</p>
+            <label class="field-label" for="restore-phrase">12-word recovery phrase</label>
+            <input class="field-input" id="restore-phrase" type="password" autocomplete="off" spellcheck="false" placeholder="word1 word2 … word12">
+            <label class="check-row danger-check"><input id="confirm-restore" type="checkbox"><span>I understand this replaces the current unused wallet and cannot be undone</span></label>
+            <div class="workflow-actions">
+              <button class="button button-light" id="restore-wallet" type="button">Restore unused node</button>
+            </div>
+            <p class="form-message" id="restore-message" role="status"></p>
+          </div>
           <p class="form-message" id="recovery-message" role="status"></p>
         </div>
       </section>

@@ -99,6 +99,10 @@
   const recoverySecret = document.querySelector('#recovery-secret');
   const recoveryPhrase = document.querySelector('#recovery-phrase');
   const recoveryMessage = document.querySelector('#recovery-message');
+  const restorePhrase = document.querySelector('#restore-phrase');
+  const confirmRestore = document.querySelector('#confirm-restore');
+  const restoreWallet = document.querySelector('#restore-wallet');
+  const restoreMessage = document.querySelector('#restore-message');
 
   if (revealRecovery) revealRecovery.addEventListener('click', function () {
     if (!confirmRecovery || !confirmRecovery.checked) {
@@ -125,6 +129,24 @@
       copyRecovery.textContent = 'Copied';
       setTimeout(function () { copyRecovery.textContent = 'Copy phrase'; }, 1400);
     });
+  });
+
+  if (restoreWallet) restoreWallet.addEventListener('click', function () {
+    const phrase = restorePhrase && restorePhrase.value.trim();
+    if (!phrase || !confirmRestore || !confirmRestore.checked) {
+      if (restoreMessage) restoreMessage.textContent = 'Enter the phrase and confirm that this will replace the unused wallet.';
+      return;
+    }
+    restoreWallet.disabled = true;
+    if (restoreMessage) restoreMessage.textContent = 'Checking that the node is unused…';
+    post('api/v1/recovery/restore', { recovery_phrase: phrase, confirm: true })
+      .then(function (data) {
+        if (restoreMessage) restoreMessage.textContent = data.message || 'Recovery accepted. Core Lightning is restarting.';
+        if (restorePhrase) restorePhrase.value = '';
+        if (confirmRestore) confirmRestore.checked = false;
+      })
+      .catch(function (error) { if (restoreMessage) restoreMessage.textContent = error.message; })
+      .finally(function () { restoreWallet.disabled = false; });
   });
 
   fetch('api/v1/status')
