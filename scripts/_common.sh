@@ -258,6 +258,12 @@ ynh_cln_write_config() {
 # Must run after lightningd has actually started with grpc enabled, since
 # the certs don't exist until then.
 ynh_cln_fix_grpc_cert_perms() {
+	# Alby Hub runs as a separate system user.  Put it in the CLN app group
+	# when it is installed so it can read only the gRPC TLS material below.
+	# Do not create the user here: Alby remains an optional integration.
+	if id alby_hub >/dev/null 2>&1; then
+		usermod --append --groups="$app" alby_hub
+	fi
 	[ "$(ynh_cln_setting grpc_enabled false)" = "true" ] || return 0
 	local cert_dir="$data_dir/bitcoin"
 	local cert
