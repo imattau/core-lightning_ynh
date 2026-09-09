@@ -258,7 +258,8 @@
   }
 
   function peerAddress(peer) {
-    const address = (peer.addresses || [])[0];
+    const addresses = peer.addresses || [];
+    const address = addresses.find(function (item) { return item && item.type === 'ipv4'; }) || addresses.find(function (item) { return item && item.type === 'dns'; }) || addresses.find(function (item) { return item && item.type === 'ipv6'; }) || addresses[0];
     if (!address) return { host: null, port: null };
     if (typeof address === 'object') return { host: address.address || address.host || null, port: address.port || null };
     const match = String(address).match(/^(.+):(\d+)$/);
@@ -290,12 +291,14 @@
 
   function renderPeers(peers) {
     if (peerSelect) {
-      if (!peerSelect) return;
-      peerSelect.innerHTML = '<option value="">Select a discovered peer</option>';
-      peers.forEach(function (peer) {
+      const connectedPeers = peers.filter(function (peer) { return peer.connected; });
+      peerSelect.innerHTML = connectedPeers.length
+        ? '<option value="">Select a connected peer</option>'
+        : '<option value="">No connected peers — use the Peers page</option>';
+      connectedPeers.forEach(function (peer) {
         const option = document.createElement('option');
         option.value = peer.id;
-        option.textContent = (peer.alias || 'Unnamed peer') + ' · ' + peer.id.slice(0, 12) + '…';
+        option.textContent = (peer.alias || 'Unnamed peer') + ' · ' + (peer.state || 'Connected');
         peerSelect.appendChild(option);
       });
     }
