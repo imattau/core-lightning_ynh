@@ -163,6 +163,17 @@ run__connect_peer() {
 	ynh_print_info "Connected to peer $peer_id at $peer_host:$peer_port."
 }
 
+run__generate_deposit_address() {
+	local result address
+	ynh_cln_healthcheck >/dev/null 2>&1 || ynh_die "Core Lightning RPC is unavailable."
+	if ! result="$(ynh_cln_rpc newaddr bech32 2>&1)"; then
+		ynh_die "Core Lightning could not generate a deposit address: $result"
+	fi
+	address="$(printf '%s' "$result" | jq -er '.bech32' 2>/dev/null)" || ynh_die "Core Lightning returned an unreadable deposit address."
+	ynh_print_info "Send on-chain Bitcoin to this Core Lightning deposit address: $address"
+	ynh_print_info "Wait for the transaction to confirm, then use Open channel in this panel. This address and its funds belong to Core Lightning, not an embedded Alby Hub wallet."
+}
+
 run__open_channel() {
 	local result available
 	ynh_cln_validate_channel_inputs

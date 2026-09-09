@@ -177,6 +177,14 @@ services = ["__APP__"]
         bind = "null"
         enabled = "peer_id && peer_host && peer_port"
 
+        [node.channels.generate_deposit_address]
+        ask.en = "Generate deposit address"
+        ask.fr = "Générer une adresse de dépôt"
+        type = "button"
+        style = "info"
+        icon = "bitcoin"
+        bind = "null"
+
         [node.channels.open_channel]
         ask.en = "Open channel"
         ask.fr = "Ouvrir un canal"

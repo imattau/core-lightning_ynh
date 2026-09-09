@@ -6,12 +6,15 @@ For the normal Alby Hub + CLN workflow, open the Core Lightning app's
 YunoHost config panel and use **Peers & channels**:
 
 1. Enter the peer's 66-character node ID, host, and P2P port.
-2. Click **Connect to peer** and confirm the success message.
-3. Enter the channel amount in satoshis.
-4. Leave **Public channel** disabled unless you intentionally want an
+2. Click **Generate deposit address** and send on-chain Bitcoin to the
+   displayed address.
+3. Wait for the transaction to confirm in Core Lightning.
+4. Click **Connect to peer** and confirm the success message.
+5. Enter the channel amount in satoshis.
+6. Leave **Public channel** disabled unless you intentionally want an
    announced routing channel.
-5. Tick the explicit funding confirmation and click **Open channel**.
-6. Use **Show channels** to monitor `OPENINGD`, confirmation-waiting, and
+7. Tick the explicit funding confirmation and click **Open channel**.
+8. Use **Show channels** to monitor `OPENINGD`, confirmation-waiting, and
    `CHANNELD_NORMAL` states.
 
 The amount is taken from Core Lightning's confirmed on-chain wallet balance,
