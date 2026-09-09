@@ -94,6 +94,17 @@ ynh_cln_grpc_port() {
 	printf '%s' "${resource:-9736}"
 }
 
+ynh_cln_restart_and_check() {
+	local setting="$1"
+	ynh_systemctl --service="$service_name" --action=restart
+	if ! ynh_cln_wait_for_rpc 300; then
+		ynh_cln_dump_diagnostics
+		ynh_die "Core Lightning RPC did not come back after changing $setting"
+	fi
+	ynh_cln_check_bitcoin_rpc
+	ynh_cln_fix_grpc_cert_perms
+}
+
 ynh_cln_require_bitcoin_app() {
 	if ! yunohost app list --output-as json 2>/dev/null | jq -e --arg app "$bitcoin_app" '[.apps[]?.id] | index($app) != null' >/dev/null; then
 		ynh_die "Core Lightning requires a Bitcoin backend. Install Bitcoin Core for YunoHost first."
@@ -120,6 +131,19 @@ ynh_cln_read_bitcoin_rpc_credentials() {
 }
 
 ynh_cln_write_config() {
+	local announce_addr rgb_value fee_base fee_per_sat min_capacity_sat
+	announce_addr="$(ynh_cln_setting announce_addr '')"
+	rgb_value="$(ynh_cln_setting rgb '')"
+	fee_base="$(ynh_cln_setting fee_base 1000)"
+	fee_per_sat="$(ynh_cln_setting fee_per_sat 10)"
+	min_capacity_sat="$(ynh_cln_setting min_capacity_sat 10000)"
+	case "$announce_addr" in *[[:space:]]*) ynh_die "Announce address must not contain whitespace" ;; esac
+	if [ -n "$rgb_value" ] && { [ "${#rgb_value}" -ne 6 ] || case "$rgb_value" in *[!0-9A-Fa-f]*) true ;; *) false ;; esac; }; then
+		ynh_die "Node color must be exactly six hexadecimal characters"
+	fi
+	case "$fee_base" in ''|*[!0-9]*) ynh_die "Base fee must be a non-negative integer" ;; esac
+	case "$fee_per_sat" in ''|*[!0-9]*) ynh_die "Proportional fee must be a non-negative integer" ;; esac
+	case "$min_capacity_sat" in ''|*[!0-9]*) ynh_die "Minimum channel capacity must be a non-negative integer" ;; esac
 	mkdir -p "$config_dir"
 	{
 		echo "# Managed by YunoHost package $app. Edit through the config panel when possible."
@@ -129,6 +153,11 @@ ynh_cln_write_config() {
 		echo "rpc-file=$data_dir/bitcoin/lightning-rpc"
 		echo "log-file=$data_dir/bitcoin/lightningd.log"
 		echo "log-level=$(ynh_cln_setting log_level info)"
+		[ -z "$announce_addr" ] || echo "announce-addr=$announce_addr"
+		[ -z "$rgb_value" ] || echo "rgb=$rgb_value"
+		echo "fee-base=$fee_base"
+		echo "fee-per-satoshi=$fee_per_sat"
+		echo "min-capacity-sat=$min_capacity_sat"
 		echo "bitcoin-rpcconnect=127.0.0.1"
 		echo "bitcoin-rpcport=8332"
 		echo "bitcoin-rpcuser=$bitcoin_rpc_user"

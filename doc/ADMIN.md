@@ -9,6 +9,17 @@ directory instead of assuming a particular upstream version. The service is
 explicitly added to the `bitcoin_core` group, and lifecycle checks verify that
 the service user can execute both `bitcoin-cli` and the bundled `pay` plugin.
 
+The configuration panel also exposes the safe operator controls needed by a
+web consumer such as Alby Hub: public announce address, node color, routing
+base/proportional fees, minimum channel capacity, and gRPC. Fee values are
+defaults for new channels; use Core Lightning's per-channel RPC commands when
+changing an existing channel policy.
+
+The panel does not accept or store a recovery phrase. CLN's mnemonic is the
+node root secret, not a mutable setting. Export it with
+`lightning-hsmtool getsecret`, and protect `hsm_secret`, `emergency.recover`,
+and the latest database according to `doc/BACKUP.md`.
+
 Removal is deliberately conservative: the package checks `listfunds` and
 refuses to remove itself while local wallet or channel funds are reported.
 

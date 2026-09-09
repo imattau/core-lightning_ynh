@@ -35,6 +35,47 @@ services = ["__APP__"]
         default = "info"
         bind = "log_level:__APP__"
 
+        [node.settings.announce_addr]
+        ask.en = "Public announce address (optional)"
+        ask.fr = "Adresse publique annoncée (optionnel)"
+        type = "string"
+        optional = true
+        bind = "announce_addr:__APP__"
+        help.en = "Host:port or Tor address announced to peers. Leave empty to use Core Lightning's automatic address discovery."
+
+        [node.settings.rgb]
+        ask.en = "Node color (optional)"
+        ask.fr = "Couleur du nœud (optionnel)"
+        type = "string"
+        optional = true
+        bind = "rgb:__APP__"
+        help.en = "Exactly six hexadecimal characters, for example FFA500."
+
+        [node.settings.fee_base]
+        ask.en = "Routing base fee (millisatoshis)"
+        ask.fr = "Frais de base de routage (millisatoshis)"
+        type = "number"
+        min = 0
+        default = 1000
+        bind = "fee_base:__APP__"
+
+        [node.settings.fee_per_sat]
+        ask.en = "Routing proportional fee (millionths)"
+        ask.fr = "Frais proportionnels de routage (millionièmes)"
+        type = "number"
+        min = 0
+        default = 10
+        bind = "fee_per_sat:__APP__"
+
+        [node.settings.min_capacity_sat]
+        ask.en = "Minimum channel capacity (satoshis)"
+        ask.fr = "Capacité minimale de canal (satoshis)"
+        type = "number"
+        min = 0
+        default = 10000
+        bind = "min_capacity_sat:__APP__"
+        help.en = "Reject incoming channels whose effective capacity is below this value."
+
         [node.settings.grpc_enabled]
         ask.en = "Enable gRPC (for local apps like Alby Hub)"
         ask.fr = "Activer gRPC (pour les applications locales comme Alby Hub)"
@@ -58,3 +99,4 @@ services = ["__APP__"]
         ask.fr = "État opérationnel"
         type = "alert"
         style = "info"
+        help.en = "Includes CLN RPC, Bitcoin RPC, gRPC certificate, channel/output, and backup-file readiness. Secrets are never displayed."

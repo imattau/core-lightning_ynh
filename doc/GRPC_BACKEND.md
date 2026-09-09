@@ -20,6 +20,10 @@ Set `grpc_enabled = true` (and optionally a non-default `grpc_port`) via the con
 - Only `ca.pem`, `client.pem`, and `client-key.pem` are ever made group-readable; every other file under `$data_dir` (including `hsm_secret`) stays owner-only.
 - Permission fix-up (`ynh_cln_fix_grpc_cert_perms`) runs after every install, upgrade, restore, and config-panel change to `grpc_enabled`/`grpc_port`, so it self-heals if CLN regenerates certs.
 
+The config-panel operational status reports whether the CLN RPC, Bitcoin RPC,
+and gRPC certificates are usable. A consumer should not be considered ready
+just because the gRPC port is configured.
+
 ## Port auto-detection, and its one gap
 
 `grpc_port` is not just a literal default - the config-panel getter reads the actual YunoHost-assigned `port_grpc` resource value, which is conflict-checked against other apps at install time (same mechanism as `port_p2p`). This is why gRPC's port doesn't normally need manual attention even when another app (e.g. a Lightning wallet's own embedded node) already holds `9735`, CLN's own default P2P port.
