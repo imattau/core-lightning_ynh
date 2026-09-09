@@ -17,6 +17,9 @@ mkdir -p "$data_dir/bitcoin"
 chown -R "$app:$app" "$data_dir"
 chmod 0700 "$data_dir" "$data_dir/bitcoin"
 ynh_app_setting_set --app="$app" --key=alias --value="${alias:-My YunoHost Lightning Node}"
+# Config-panel readonly values must have an initial value on a fresh install.
+# This is populated by the Generate deposit address action later.
+ynh_app_setting_set --app="$app" --key=deposit_address --value=""
 ynh_cln_write_config
 
 ynh_script_progression "Registering Core Lightning service..."
