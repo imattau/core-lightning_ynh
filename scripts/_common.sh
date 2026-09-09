@@ -30,7 +30,11 @@ ynh_cln_setting() {
 
 ynh_cln_web_port() {
 	local port
-	port="$(ynh_app_setting_get --app="$app" --key=port_main 2>/dev/null || true)"
+	# YunoHost stores the primary port resource as `port`; custom resources
+	# use names such as `port_p2p` and `port_grpc`. Keep port_main as a
+	# compatibility fallback for early development installs.
+	port="$(ynh_app_setting_get --app="$app" --key=port 2>/dev/null || true)"
+	[ -n "$port" ] || port="$(ynh_app_setting_get --app="$app" --key=port_main 2>/dev/null || true)"
 	printf '%s' "${port:-8090}"
 }
 
