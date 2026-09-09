@@ -118,12 +118,15 @@ ynh_cln_check_bitcoin_rpc() {
 ynh_cln_p2p_port() {
 	local override resource
 	override="$(ynh_app_setting_get --app="$app" --key=p2p 2>/dev/null || true)"
-	if [ -n "$override" ]; then
-		printf '%s' "$override"
-		return 0
-	fi
+	case "$override" in
+		''|*[!0-9]*) ;;
+		*) printf '%s' "$override"; return 0 ;;
+	esac
 	resource="$(ynh_app_setting_get --app="$app" --key=port_p2p 2>/dev/null || true)"
-	printf '%s' "${resource:-9735}"
+	case "$resource" in
+		''|*[!0-9]*) printf '9735' ;;
+		*) printf '%s' "$resource" ;;
+	esac
 }
 
 # Same idea as ynh_cln_p2p_port, for the grpc port resource ("port_grpc").
@@ -136,12 +139,15 @@ ynh_cln_p2p_port() {
 ynh_cln_grpc_port() {
 	local override resource
 	override="$(ynh_app_setting_get --app="$app" --key=grpc_port 2>/dev/null || true)"
-	if [ -n "$override" ]; then
-		printf '%s' "$override"
-		return 0
-	fi
+	case "$override" in
+		''|*[!0-9]*) ;;
+		*) printf '%s' "$override"; return 0 ;;
+	esac
 	resource="$(ynh_app_setting_get --app="$app" --key=port_grpc 2>/dev/null || true)"
-	printf '%s' "${resource:-9736}"
+	case "$resource" in
+		''|*[!0-9]*) printf '9736' ;;
+		*) printf '%s' "$resource" ;;
+	esac
 }
 
 ynh_cln_restart_and_check() {
