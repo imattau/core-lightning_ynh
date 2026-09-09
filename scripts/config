@@ -249,8 +249,21 @@ run__generate_deposit_address() {
 		ynh_die "Core Lightning could not generate a deposit address: $result"
 	fi
 	address="$(printf '%s' "$result" | jq -er '.bech32' 2>/dev/null)" || ynh_die "Core Lightning returned an unreadable deposit address."
+	ynh_app_setting_set --app="$app" --key=deposit_address --value="$address"
 	ynh_print_info "Send on-chain Bitcoin to this Core Lightning deposit address: $address"
 	ynh_print_info "Wait for the transaction to confirm, then use Open channel in this panel. This address and its funds belong to Core Lightning, not an embedded Alby Hub wallet."
+}
+
+get__deposit_address() {
+	local address
+	address="$(ynh_cln_setting deposit_address '')"
+	if [ -n "$address" ]; then
+		printf '%s\n\n`%s`\n\n%s' \
+			'Latest Core Lightning deposit address' "$address" \
+			'Generate another address only if you need a new one; previously generated Core Lightning addresses remain valid.'
+	else
+		printf '%s' 'No deposit address has been generated yet. Use **Generate deposit address** above.'
+	fi
 }
 
 run__open_channel() {
@@ -299,9 +312,9 @@ ynh_cln_recovery_secret() {
 get__recovery_mnemonic() {
 	local mnemonic
 	if mnemonic="$(ynh_cln_recovery_secret 2>/dev/null)"; then
-		printf '%s' "$mnemonic"
+		printf '%s\n\n`%s`' 'Wallet recovery phrase' "$mnemonic"
 	else
-		printf '%s' 'Recovery phrase is unavailable. Use the export action or check that the node completed its first startup.'
+		printf '%s' 'Recovery phrase is unavailable. Check that the node completed its first startup and that its hsm_secret is readable.'
 	fi
 }
 

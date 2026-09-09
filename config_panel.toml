@@ -119,6 +119,7 @@ services = ["__APP__"]
         type = "markdown"
         readonly = true
         bind = "null"
+        default = ""
         visible = "reveal_recovery"
 
     [node.channels]
@@ -240,3 +241,11 @@ services = ["__APP__"]
         style = "info"
         icon = "bitcoin"
         bind = "null"
+
+        [node.funding.deposit_address]
+        ask.en = "Current deposit address"
+        ask.fr = "Adresse de dépôt actuelle"
+        type = "markdown"
+        readonly = true
+        bind = "null"
+        default = "No deposit address has been generated yet."
