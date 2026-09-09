@@ -156,6 +156,13 @@ ynh_cln_restart_and_check() {
 }
 
 ynh_cln_require_bitcoin_app() {
+	# Config-panel callbacks can run before YunoHost has populated the helper's
+	# cached resource variables. Refresh the Bitcoin Core settings here and use
+	# the package's standard data path as a bounded fallback.
+	bitcoin_data_dir="$(ynh_app_setting_get --app="$bitcoin_app" --key=data_dir 2>/dev/null || true)"
+	bitcoin_install_dir="$(ynh_app_setting_get --app="$bitcoin_app" --key=install_dir 2>/dev/null || true)"
+	[ -n "$bitcoin_data_dir" ] || [ ! -d "/home/yunohost.app/$bitcoin_app" ] || bitcoin_data_dir="/home/yunohost.app/$bitcoin_app"
+	[ -n "$bitcoin_install_dir" ] || [ ! -d "/var/www/$bitcoin_app" ] || bitcoin_install_dir="/var/www/$bitcoin_app"
 	if ! yunohost app list --output-as json 2>/dev/null | jq -e --arg app "$bitcoin_app" '[.apps[]?.id] | index($app) != null' >/dev/null; then
 		ynh_die "Core Lightning requires a Bitcoin backend. Install Bitcoin Core for YunoHost first."
 	fi
