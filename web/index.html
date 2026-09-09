@@ -38,7 +38,7 @@
           <h1>Good morning, operator</h1>
         </div>
         <div class="topbar-actions">
-          <span class="status-pill online"><i></i>Online</span>
+          <span class="status-pill online" id="top-health"><i></i>Online</span>
           <button class="avatar" data-target="settings" type="button" aria-label="Account menu">CL</button>
         </div>
       </header>
@@ -97,7 +97,7 @@
               <p class="eyebrow">Network</p>
               <h2>Channels</h2>
             </div>
-            <a class="text-button" href="#channels">View all <span>→</span></a>
+            <a class="text-button" data-target="channels" href="#channels">View all <span>→</span></a>
           </div>
           <div class="channel-workflow">
             <div class="channel-summary" id="channel-summary">
@@ -132,7 +132,7 @@
               <p class="eyebrow">System</p>
               <h2>Node status</h2>
             </div>
-            <span class="status-pill online"><i></i>Healthy</span>
+          <span class="status-pill online" id="node-health"><i></i>Checking</span>
           </div>
           <dl class="status-list">
             <div><dt>Backend</dt><dd>Core Lightning</dd></div>
@@ -140,7 +140,7 @@
             <div><dt>Bitcoin sync</dt><dd id="bitcoin-sync"><span class="status-dot warning"></span>Checking</dd></div>
             <div><dt>Peers</dt><dd><span id="peer-count">0</span> connected</dd></div>
           </dl>
-          <a class="text-button" href="#node">Open node details <span>→</span></a>
+          <a class="text-button" data-target="node" href="#node">Open node details <span>→</span></a>
         </article>
       </section>
 

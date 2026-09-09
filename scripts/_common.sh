@@ -46,6 +46,9 @@ CLN_RPC_BIN=$lightning_cli
 CLN_LIGHTNING_DIR=$data_dir
 CLN_HSMTOOL=$install_dir/bin/lightning-hsmtool
 CLN_HSM_SECRET=$data_dir/bitcoin/hsm_secret
+CLN_BITCOIN_CLI=$bitcoin_cli
+CLN_BITCOIN_CONFIG_FILE=$bitcoin_config_file
+CLN_BITCOIN_DATA_DIR=$bitcoin_data_dir
 EOF
 	chown root:"$app" "$config_dir/web.env"
 	chmod 0640 "$config_dir/web.env"

@@ -134,9 +134,46 @@
       const network = document.querySelector('#node-network');
       const peers = document.querySelector('#peer-count');
       const channels = document.querySelector('#channel-count');
+      const nodeHealth = document.querySelector('#node-health');
+      const topHealth = document.querySelector('#top-health');
+      const sync = document.querySelector('#bitcoin-sync');
       if (network) network.textContent = node.network || 'Bitcoin';
       if (peers) peers.textContent = data.peers || '0';
       if (channels) channels.textContent = data.channels || '0';
+      if (nodeHealth) {
+        const bitcoin = data.bitcoin || {};
+        nodeHealth.classList.remove('online');
+        if (!data.online) {
+          nodeHealth.textContent = 'Offline';
+        } else if (!bitcoin.available) {
+          nodeHealth.textContent = 'Degraded';
+        } else if (bitcoin.synced) {
+          nodeHealth.classList.add('online');
+          nodeHealth.textContent = 'Healthy';
+        } else {
+          nodeHealth.textContent = 'Syncing';
+        }
+        const dot = document.createElement('i');
+        nodeHealth.prepend(dot);
+      }
+      if (topHealth) {
+        topHealth.classList.toggle('online', Boolean(data.online));
+        topHealth.textContent = data.online ? 'Online' : 'Offline';
+        const dot = document.createElement('i');
+        topHealth.prepend(dot);
+      }
+      if (sync) {
+        const bitcoin = data.bitcoin || {};
+        if (!bitcoin.available) {
+          sync.innerHTML = '<span class="status-dot danger"></span>Unavailable';
+        } else if (bitcoin.synced) {
+          sync.innerHTML = '<span class="status-dot good"></span>Synced · block ' + Number(bitcoin.blocks || 0).toLocaleString() + '';
+        } else {
+          const progress = Number(bitcoin.verification_progress);
+          const label = Number.isFinite(progress) && progress > 0 ? 'Syncing · ' + (progress * 100).toFixed(1) + '%' : 'Syncing';
+          sync.innerHTML = '<span class="status-dot warning"></span>' + label;
+        }
+      }
     })
     .catch(function () {
       if (walletState) walletState.textContent = 'CLN offline';

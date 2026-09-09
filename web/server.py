@@ -22,6 +22,9 @@ RPC_BIN = os.environ.get("CLN_RPC_BIN", "lightning-cli")
 LIGHTNING_DIR = os.environ.get("CLN_LIGHTNING_DIR", "")
 HSMTOOL = os.environ.get("CLN_HSMTOOL", "lightning-hsmtool")
 HSM_SECRET = os.environ.get("CLN_HSM_SECRET", "")
+BITCOIN_CLI = os.environ.get("CLN_BITCOIN_CLI", "bitcoin-cli")
+BITCOIN_CONFIG_FILE = os.environ.get("CLN_BITCOIN_CONFIG_FILE", "")
+BITCOIN_DATA_DIR = os.environ.get("CLN_BITCOIN_DATA_DIR", "")
 RPC_TIMEOUT = 15
 NODE_ID_RE = re.compile(r"^[0-9a-fA-F]{66}$")
 NODE_SETTINGS = {
@@ -54,6 +57,28 @@ def rpc(method, *args):
         return json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError("Core Lightning returned invalid JSON") from exc
+
+
+def bitcoin_info():
+    command = [BITCOIN_CLI]
+    if BITCOIN_CONFIG_FILE:
+        command.append("-conf=" + BITCOIN_CONFIG_FILE)
+    if BITCOIN_DATA_DIR:
+        command.append("-datadir=" + BITCOIN_DATA_DIR)
+    command.append("getblockchaininfo")
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=RPC_TIMEOUT,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError("Bitcoin Core status is unavailable")
+    try:
+        return json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Bitcoin Core returned invalid JSON") from exc
 
 
 def recovery_secret():
@@ -217,6 +242,22 @@ class Handler(BaseHTTPRequestHandler):
                 info = rpc("getinfo")
                 funds = rpc("listfunds")
                 peers = rpc("listpeers")
+                bitcoin = {"available": False, "synced": False}
+                try:
+                    chain = bitcoin_info()
+                    blocks = int(chain.get("blocks", 0))
+                    headers = int(chain.get("headers", blocks))
+                    bitcoin = {
+                        "available": True,
+                        "chain": chain.get("chain"),
+                        "blocks": blocks,
+                        "headers": headers,
+                        "verification_progress": chain.get("verificationprogress"),
+                        "initial_block_download": bool(chain.get("initial_block_download", False)),
+                        "synced": not bool(chain.get("initial_block_download", False)) and blocks >= headers,
+                    }
+                except (OSError, RuntimeError, subprocess.TimeoutExpired):
+                    pass
                 self.send_json(HTTPStatus.OK, {
                     "online": True,
                     "node": {
@@ -228,6 +269,7 @@ class Handler(BaseHTTPRequestHandler):
                     "channels": len(funds.get("channels", [])),
                     "peers": sum(1 for peer in peers.get("peers", []) if peer.get("connected")),
                     "outputs": len(funds.get("outputs", [])),
+                    "bitcoin": bitcoin,
                 })
                 return
             if path == "/api/v1/wallet":
