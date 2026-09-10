@@ -16,7 +16,7 @@
   });
 
   const contentGrid = document.querySelector('.content-grid');
-  const viewNames = ['home', 'wallet', 'channels', 'peers', 'node', 'backup', 'settings'];
+  const viewNames = ['home', 'wallet', 'payments', 'channels', 'peers', 'node', 'backup', 'settings'];
   const navLinks = Array.from(document.querySelectorAll('.nav-item, .mobile-nav a'));
 
   function showView(name) {
@@ -38,6 +38,7 @@
     }
     if (view === 'settings') loadSettings();
     if (view === 'peers') loadPeers();
+    if (view === 'payments') { loadInvoices(); loadPayments(); }
   }
 
   function routeFromHash() {
@@ -59,15 +60,36 @@
     });
   });
 
+  function renderQr(container, text) {
+    if (!container) return;
+    if (!text || typeof qrcode !== 'function') {
+      container.hidden = true;
+      container.innerHTML = '';
+      return;
+    }
+    try {
+      const qr = qrcode(0, 'L');
+      qr.addData(text);
+      qr.make();
+      container.innerHTML = qr.createSvgTag({ scalable: true, margin: 2 });
+      container.hidden = false;
+    } catch (error) {
+      container.hidden = true;
+      container.innerHTML = '';
+    }
+  }
+
   const address = document.querySelector('#deposit-address');
   const generate = document.querySelector('#generate-address');
   const copy = document.querySelector('#copy-address');
   const walletState = document.querySelector('#wallet-state');
+  const addressQr = document.querySelector('#address-qr');
 
   function setAddress(value) {
     if (!address || !copy) return;
     address.textContent = value || 'No address generated yet';
     copy.disabled = !value;
+    renderQr(addressQr, value);
   }
 
   if (copy) copy.addEventListener('click', function () {
@@ -489,6 +511,155 @@
       .catch(function (error) { if (settingsMessage) settingsMessage.textContent = error.message; })
       .finally(function () { if (save) save.disabled = false; });
   }
+
+  const invoiceAmount = document.querySelector('#invoice-amount');
+  const invoiceDescription = document.querySelector('#invoice-description');
+  const createInvoice = document.querySelector('#create-invoice');
+  const invoiceMessage = document.querySelector('#invoice-message');
+  const invoiceResult = document.querySelector('#invoice-result');
+  const invoiceBolt11 = document.querySelector('#invoice-bolt11');
+  const copyInvoice = document.querySelector('#copy-invoice');
+  const invoiceList = document.querySelector('#invoice-list');
+  const invoiceQr = document.querySelector('#invoice-qr');
+
+  function timeAgo(seconds) {
+    if (!seconds) return '';
+    const diff = Math.max(0, Math.floor(Date.now() / 1000) - Number(seconds));
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
+  function renderInvoices(invoices) {
+    if (!invoiceList) return;
+    invoiceList.innerHTML = '';
+    if (!invoices.length) {
+      invoiceList.innerHTML = '<p class="muted">No invoices yet.</p>';
+      return;
+    }
+    invoices.forEach(function (item) {
+      const row = document.createElement('div');
+      row.className = 'channel-row';
+      const details = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = item.description || item.label || 'Invoice';
+      const meta = document.createElement('small');
+      meta.textContent = (item.status || 'unpaid') + (item.paid_at ? ' · ' + timeAgo(item.paid_at) : '');
+      details.appendChild(title);
+      details.appendChild(meta);
+      const amounts = document.createElement('div');
+      amounts.className = 'channel-amounts';
+      const amountText = document.createElement('strong');
+      amountText.textContent = Math.floor(msatValue(item.amount_msat) / 1000).toLocaleString() + ' sats';
+      amounts.appendChild(amountText);
+      row.appendChild(details);
+      row.appendChild(amounts);
+      invoiceList.appendChild(row);
+    });
+  }
+
+  function loadInvoices() {
+    fetch('api/v1/invoices')
+      .then(function (response) { if (!response.ok) throw new Error('Unable to load invoices'); return response.json(); })
+      .then(function (data) { renderInvoices(data.invoices || []); })
+      .catch(function () { if (invoiceList) invoiceList.innerHTML = '<p class="muted">Unable to load invoices.</p>'; });
+  }
+
+  if (copyInvoice) copyInvoice.addEventListener('click', function () {
+    if (!invoiceBolt11 || !invoiceBolt11.textContent) return;
+    navigator.clipboard.writeText(invoiceBolt11.textContent).then(function () {
+      copyInvoice.textContent = 'Copied';
+      setTimeout(function () { copyInvoice.textContent = 'Copy'; }, 1400);
+    });
+  });
+
+  if (createInvoice) createInvoice.addEventListener('click', function () {
+    const amount = Number((invoiceAmount && invoiceAmount.value) || 0);
+    const description = (invoiceDescription && invoiceDescription.value.trim()) || '';
+    if (!amount) { if (invoiceMessage) invoiceMessage.textContent = 'Enter an amount in satoshis.'; return; }
+    if (!description) { if (invoiceMessage) invoiceMessage.textContent = 'Enter a description for this invoice.'; return; }
+    createInvoice.disabled = true;
+    if (invoiceMessage) invoiceMessage.textContent = 'Creating invoice…';
+    post('api/v1/invoices', { amount_sat: amount, description: description })
+      .then(function (data) {
+        if (invoiceBolt11) invoiceBolt11.textContent = data.bolt11 || '';
+        if (invoiceResult) invoiceResult.hidden = !data.bolt11;
+        renderQr(invoiceQr, data.bolt11);
+        if (invoiceMessage) invoiceMessage.textContent = 'Invoice created. Share it to receive payment.';
+        if (invoiceAmount) invoiceAmount.value = '';
+        if (invoiceDescription) invoiceDescription.value = '';
+        loadInvoices();
+      })
+      .catch(function (error) { if (invoiceMessage) invoiceMessage.textContent = error.message; })
+      .finally(function () { createInvoice.disabled = false; });
+  });
+
+  const payInvoiceField = document.querySelector('#pay-invoice');
+  const payMaxFee = document.querySelector('#pay-max-fee');
+  const confirmPayment = document.querySelector('#confirm-payment');
+  const sendPayment = document.querySelector('#send-payment');
+  const paymentMessage = document.querySelector('#payment-message');
+  const paymentList = document.querySelector('#payment-list');
+
+  function renderPayments(payments) {
+    if (!paymentList) return;
+    paymentList.innerHTML = '';
+    if (!payments.length) {
+      paymentList.innerHTML = '<p class="muted">No outgoing payments yet.</p>';
+      return;
+    }
+    payments.forEach(function (item) {
+      const row = document.createElement('div');
+      row.className = 'channel-row';
+      const details = document.createElement('div');
+      const title = document.createElement('strong');
+      const bolt11 = item.bolt11 || '';
+      title.textContent = bolt11 ? bolt11.slice(0, 24) + '…' : (item.payment_hash || 'Payment').slice(0, 24);
+      const meta = document.createElement('small');
+      meta.textContent = (item.status || 'pending') + (item.created_at ? ' · ' + timeAgo(item.created_at) : '');
+      details.appendChild(title);
+      details.appendChild(meta);
+      const amounts = document.createElement('div');
+      amounts.className = 'channel-amounts';
+      const amountText = document.createElement('strong');
+      amountText.textContent = Math.floor(msatValue(item.amount_sent_msat || item.amount_msat) / 1000).toLocaleString() + ' sats';
+      amounts.appendChild(amountText);
+      row.appendChild(details);
+      row.appendChild(amounts);
+      paymentList.appendChild(row);
+    });
+  }
+
+  function loadPayments() {
+    fetch('api/v1/payments')
+      .then(function (response) { if (!response.ok) throw new Error('Unable to load payments'); return response.json(); })
+      .then(function (data) { renderPayments(data.payments || []); })
+      .catch(function () { if (paymentList) paymentList.innerHTML = '<p class="muted">Unable to load payments.</p>'; });
+  }
+
+  if (sendPayment) sendPayment.addEventListener('click', function () {
+    const invoice = (payInvoiceField && payInvoiceField.value.trim()) || '';
+    const maxFee = payMaxFee && payMaxFee.value !== '' ? Number(payMaxFee.value) : null;
+    if (!invoice) { if (paymentMessage) paymentMessage.textContent = 'Enter a Lightning invoice to pay.'; return; }
+    if (!confirmPayment || !confirmPayment.checked) { if (paymentMessage) paymentMessage.textContent = 'Tick the confirmation before sending a payment.'; return; }
+    const payload = { invoice: invoice, confirm: true };
+    if (maxFee !== null) payload.max_fee_sat = maxFee;
+    sendPayment.disabled = true;
+    if (paymentMessage) paymentMessage.textContent = 'Sending payment… this can take up to a minute.';
+    post('api/v1/payments', payload)
+      .then(function (data) {
+        const sent = Math.floor(msatValue(data.amount_sent_msat) / 1000);
+        if (paymentMessage) paymentMessage.textContent = 'Payment sent · ' + sent.toLocaleString() + ' sats total.';
+        if (payInvoiceField) payInvoiceField.value = '';
+        if (payMaxFee) payMaxFee.value = '';
+        if (confirmPayment) confirmPayment.checked = false;
+        loadPayments();
+        loadWallet();
+      })
+      .catch(function (error) { if (paymentMessage) paymentMessage.textContent = error.message; })
+      .finally(function () { sendPayment.disabled = false; });
+  });
 
   const saveSettingsButton = document.querySelector('#save-settings');
   const reloadSettingsButton = document.querySelector('#reload-settings');

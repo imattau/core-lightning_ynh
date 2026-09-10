@@ -45,12 +45,7 @@ NODE_SETTINGS = {
 }
 
 
-def rpc(method, *args, timeout=RPC_TIMEOUT):
-    command = [RPC_BIN]
-    if LIGHTNING_DIR:
-        command.extend(["--lightning-dir", LIGHTNING_DIR])
-    command.append(method)
-    command.extend(args)
+def _run_cli(command, timeout):
     completed = subprocess.run(
         command,
         check=False,
@@ -77,6 +72,31 @@ def rpc(method, *args, timeout=RPC_TIMEOUT):
         return json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError("Core Lightning returned invalid JSON") from exc
+
+
+def rpc(method, *args, timeout=RPC_TIMEOUT):
+    command = [RPC_BIN]
+    if LIGHTNING_DIR:
+        command.extend(["--lightning-dir", LIGHTNING_DIR])
+    command.append(method)
+    command.extend(args)
+    return _run_cli(command, timeout)
+
+
+def rpc_kw(method, timeout=RPC_TIMEOUT, **kwargs):
+    """Call an RPC method with named key=value parameters via -k.
+
+    Some CLN plugin commands (e.g. xpay) only accept certain parameters by
+    name, and lightning-cli requires the -k flag to parse bare key=value
+    arguments instead of guessing positionally.
+    """
+    command = [RPC_BIN]
+    if LIGHTNING_DIR:
+        command.extend(["--lightning-dir", LIGHTNING_DIR])
+    command.append("-k")
+    command.append(method)
+    command.extend(key + "=" + str(value) for key, value in kwargs.items())
+    return _run_cli(command, timeout)
 
 
 def bitcoin_info():
@@ -318,6 +338,57 @@ def validate_channel_amount(value):
     return amount
 
 
+def validate_invoice_amount(value):
+    if isinstance(value, bool):
+        raise RuntimeError("Invoice amount must be an integer")
+    try:
+        amount = int(value)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("Invoice amount must be an integer") from exc
+    if amount < 1 or amount > 100_000_000:
+        raise RuntimeError("Invoice amount must be between 1 and 100,000,000 satoshis")
+    return amount
+
+
+def validate_invoice_description(value):
+    if not isinstance(value, str):
+        raise RuntimeError("Enter a description for this invoice")
+    description = value.strip()
+    if not description:
+        raise RuntimeError("Enter a description for this invoice")
+    if len(description) > 255:
+        raise RuntimeError("Invoice description must be 255 characters or fewer")
+    return description
+
+
+BOLT11_RE = re.compile(r"ln(bc|tb|bcrt|tbs)[0-9a-z]+")
+
+
+def validate_bolt11(value):
+    if not isinstance(value, str):
+        raise RuntimeError("Enter a Lightning invoice")
+    invoice = value.strip().lower()
+    if invoice.startswith("lightning:"):
+        invoice = invoice[len("lightning:"):]
+    if not invoice or len(invoice) > 4096 or not BOLT11_RE.fullmatch(invoice):
+        raise RuntimeError("That does not look like a valid Lightning invoice")
+    return invoice
+
+
+def validate_max_fee_sat(value):
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        raise RuntimeError("Maximum fee must be an integer")
+    try:
+        amount = int(value)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("Maximum fee must be an integer") from exc
+    if amount < 0 or amount > 1_000_000:
+        raise RuntimeError("Maximum fee must be between 0 and 1,000,000 satoshis")
+    return amount
+
+
 def validate_node_setting(key, value):
     setting = NODE_SETTINGS.get(key)
     if not setting:
@@ -511,6 +582,16 @@ class Handler(BaseHTTPRequestHandler):
                 discovered.sort(key=lambda item: item.get("last_timestamp", 0), reverse=True)
                 self.send_json(HTTPStatus.OK, {"peers": discovered[:50]})
                 return
+            if path == "/api/v1/invoices":
+                invoices = rpc("listinvoices").get("invoices", [])
+                invoices.sort(key=lambda item: item.get("expires_at", 0), reverse=True)
+                self.send_json(HTTPStatus.OK, {"invoices": invoices[:20]})
+                return
+            if path == "/api/v1/payments":
+                payments = rpc("listpays").get("pays", [])
+                payments.sort(key=lambda item: item.get("created_at", 0), reverse=True)
+                self.send_json(HTTPStatus.OK, {"payments": payments[:20]})
+                return
             if path == "/api/v1/health":
                 self.send_json(HTTPStatus.OK, {"ok": True})
                 return
@@ -523,7 +604,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):  # noqa: N802 - BaseHTTPRequestHandler API
         path = urlparse(self.path).path
-        if path not in ("/api/v1/wallet/address", "/api/v1/peers/bootstrap", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal", "/api/v1/recovery/restore", "/api/v1/node/settings"):
+        if path not in ("/api/v1/wallet/address", "/api/v1/peers/bootstrap", "/api/v1/peers/connect", "/api/v1/channels/open", "/api/v1/recovery/reveal", "/api/v1/recovery/restore", "/api/v1/node/settings", "/api/v1/invoices", "/api/v1/payments"):
             self.send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
             return
         try:
@@ -555,6 +636,24 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/v1/wallet/address":
                 address = rpc("newaddr", "bech32")
                 self.send_json(HTTPStatus.OK, address)
+                return
+            if path == "/api/v1/invoices":
+                amount_sat = validate_invoice_amount(payload.get("amount_sat"))
+                description = validate_invoice_description(payload.get("description"))
+                label = "web-" + os.urandom(8).hex()
+                result = rpc("invoice", str(amount_sat * 1000), label, description)
+                self.send_json(HTTPStatus.OK, result)
+                return
+            if path == "/api/v1/payments":
+                if payload.get("confirm") is not True:
+                    raise RuntimeError("Explicit payment confirmation is required")
+                bolt11 = validate_bolt11(payload.get("invoice"))
+                max_fee_sat = validate_max_fee_sat(payload.get("max_fee_sat"))
+                kwargs = {"invstring": bolt11}
+                if max_fee_sat is not None:
+                    kwargs["maxfee"] = str(max_fee_sat * 1000)
+                result = rpc_kw("xpay", timeout=90, **kwargs)
+                self.send_json(HTTPStatus.OK, result)
                 return
 
             peer_id, endpoint_host, endpoint_port = peer_endpoint(payload.get("peer_id"))

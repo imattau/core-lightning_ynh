@@ -28,9 +28,11 @@ If no peers are discovered, select **Manual** peer selection and enter the
 peer's 66-character node ID, host, and P2P port. A fresh CLN node may need an
 initial bootstrap peer before gossip can populate the discovered list.
 
-The panel deliberately does not provide close, invoice, payment, or liquidity
-management actions yet. Those remain available through CLN's RPC for advanced
-operators.
+The web UI's Payments page provides invoicing (receive) and paying a bolt11
+invoice (send) via CLN's `xpay` plugin, with an optional operator-set maximum
+fee. The panel still deliberately does not provide channel closing or
+liquidity management actions; those remain available through CLN's RPC for
+advanced operators.
 
 ## Command-line equivalent
 

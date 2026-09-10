@@ -14,14 +14,20 @@ becomes a bottom navigation bar, cards stack into one column, and tables
 become touch-friendly cards.
 
 The current `web/` directory is a self-contained responsive UI prototype. It deliberately
-uses no external fonts, icon CDN, or runtime JavaScript dependency so the final
-package can remain self-contained.
+uses no external fonts, icon CDN, or network-loaded JavaScript dependency so the final
+package can remain self-contained. The one exception is `web/assets/qrcode.js`, the
+MIT-licensed [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)
+library (Copyright (c) 2009 Kazuhiko Arase) vendored verbatim as a local static
+file — never fetched from a CDN — and used to render the deposit address and
+invoice QR codes as inline SVG.
 
 The local API is also present in `web/server.py`. It serves the UI from
 localhost and supports node status, wallet/channel readout, peer readout,
 health checks, address generation, discovered-peer lookup, peer connection,
-channel opening, and a guarded recovery-phrase reveal. Channel opening and
-recovery display require explicit confirmation and return structured errors.
+channel opening, invoice creation and listing, sending a Lightning payment
+(via CLN's `xpay` plugin) and listing recent outgoing payments, and a guarded
+recovery-phrase reveal. Channel opening, sending a payment, and recovery
+display all require explicit confirmation and return structured errors.
 
 ## Package integration
 
@@ -39,9 +45,9 @@ page memory, with no local-storage or operation-output fallback.
 
 The API should expose only the operations needed by the UI: node status,
 wallet balances, address generation, peer discovery, peer connection,
-channel opening, channel listing, and guarded recovery display. Spending
-operations must always require an explicit confirmation and return structured
-errors suitable for the UI.
+channel opening, channel listing, invoicing, sending payments, and guarded
+recovery display. Spending operations must always require an explicit
+confirmation and return structured errors suitable for the UI.
 
 ## Mobile acceptance criteria
 

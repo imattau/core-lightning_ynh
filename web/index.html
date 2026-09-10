@@ -20,6 +20,7 @@
       <nav class="nav-list">
         <a class="nav-item active" href="#home" aria-current="page"><span>⌂</span>Home</a>
         <a class="nav-item" href="#wallet"><span>₿</span>Wallet</a>
+        <a class="nav-item" href="#payments"><span>⚡</span>Payments</a>
         <a class="nav-item" href="#channels"><span>↔</span>Channels</a>
         <a class="nav-item" href="#peers"><span>◉</span>Peers</a>
         <a class="nav-item" href="#node"><span>⌁</span>Node</a>
@@ -87,6 +88,58 @@
             <button class="button button-yellow" id="generate-address" type="button">Generate address</button>
             <button class="button button-light" id="copy-address" type="button" disabled>Copy</button>
           </div>
+        </div>
+        <div class="qr-box" id="address-qr" hidden></div>
+      </section>
+
+      <section class="panel payments-panel view-panel" id="payments" data-view="payments" hidden>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Lightning</p>
+            <h2>Payments</h2>
+          </div>
+        </div>
+        <div class="payments-grid">
+          <article class="panel">
+            <div class="panel-heading">
+              <div><h3>Receive</h3><p class="muted">Create an invoice for someone to pay you.</p></div>
+            </div>
+            <div class="form-grid">
+              <label><span class="field-label">Amount (sats)</span><input class="field-input" id="invoice-amount" type="number" min="1" max="100000000" placeholder="1000"></label>
+              <label><span class="field-label">Description</span><input class="field-input" id="invoice-description" type="text" maxlength="255" placeholder="What is this for?"></label>
+            </div>
+            <div class="workflow-actions">
+              <button class="button button-yellow" id="create-invoice" type="button">Create invoice</button>
+            </div>
+            <p class="form-message" id="invoice-message" role="status"></p>
+            <div class="address-row" id="invoice-result" hidden>
+              <div>
+                <p class="muted">Share this invoice to receive the payment.</p>
+                <code id="invoice-bolt11"></code>
+              </div>
+              <div class="address-actions">
+                <button class="button button-light" id="copy-invoice" type="button">Copy</button>
+              </div>
+            </div>
+            <div class="qr-box" id="invoice-qr" hidden></div>
+            <div class="channel-list" id="invoice-list" aria-live="polite"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <div><h3>Send</h3><p class="muted">Pay a Lightning invoice from this node's wallet.</p></div>
+            </div>
+            <div class="form-grid">
+              <label class="field-full"><span class="field-label">Lightning invoice (bolt11)</span><input class="field-input" id="pay-invoice" type="text" inputmode="text" spellcheck="false" placeholder="lnbc…"></label>
+              <label><span class="field-label">Maximum fee (sats, optional)</span><input class="field-input" id="pay-max-fee" type="number" min="0" max="1000000" placeholder="Leave blank for CLN's default"></label>
+            </div>
+            <label class="check-row danger-check"><input id="confirm-payment" type="checkbox"><span>I understand this will spend CLN wallet funds</span></label>
+            <div class="workflow-actions">
+              <button class="button button-yellow" id="send-payment" type="button">Send payment</button>
+            </div>
+            <p class="form-message" id="payment-message" role="status"></p>
+            <div class="channel-list" id="payment-list" aria-live="polite"></div>
+          </article>
         </div>
       </section>
 
@@ -238,6 +291,7 @@
         </div>
         <div class="quick-actions">
           <button class="quick-action" data-target="wallet" type="button"><span class="quick-icon yellow">₿</span><span><strong>Deposit bitcoin</strong><small>Generate an address and QR code</small></span><b>→</b></button>
+          <button class="quick-action" data-target="payments" type="button"><span class="quick-icon yellow">⚡</span><span><strong>Send or receive</strong><small>Pay an invoice or create one</small></span><b>→</b></button>
           <button class="quick-action" data-target="peers" type="button"><span class="quick-icon blue">↔</span><span><strong>Connect a peer</strong><small>Find a Lightning node to connect to</small></span><b>→</b></button>
           <button class="quick-action" data-target="backup" type="button"><span class="quick-icon purple">▣</span><span><strong>Check your backup</strong><small>Keep your recovery information safe</small></span><b>→</b></button>
         </div>
@@ -252,6 +306,7 @@
     <a href="#channels"><span>↔</span>Channels</a>
     <a href="#node"><span>⌁</span>Node</a>
   </nav>
+  <script src="assets/qrcode.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>

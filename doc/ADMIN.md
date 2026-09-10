@@ -1,8 +1,10 @@
 # Administration
 
-The package includes a protected Core Lightning web UI alongside the YunoHost config panel. Use the app tile for balances, deposit-address generation, peer discovery, peer connection, channel opening, and recovery display. The config panel remains for package settings and diagnostics. Use `lightning-cli` over the local Unix socket for invoices, payments, advanced channel operations, and troubleshooting.
+The package includes a protected Core Lightning web UI alongside the YunoHost config panel. Use the app tile for balances, deposit-address generation, peer discovery, peer connection, channel opening, sending/receiving Lightning payments, and recovery display. The config panel remains for package settings and diagnostics. Use `lightning-cli` over the local Unix socket for channel closing, liquidity management, advanced channel operations, and troubleshooting.
 
-Opening a channel remains an operator and financial decision: the panel requires the peer, amount, visibility, and an explicit funding confirmation. It does not choose peers, manage liquidity, pay invoices, or close channels.
+The Payments page sends outgoing payments through CLN's `xpay` plugin (`lightning-cli -k xpay invstring=... maxfee=...`), with an optional operator-set maximum fee in satoshis; when left blank, CLN's own default fee tolerance applies. Receiving generates a bolt11 invoice via `lightning-cli invoice` with a randomly generated label. Sending always requires the explicit spending-confirmation checkbox, matching the pattern used for channel funding.
+
+Opening a channel remains an operator and financial decision: the panel requires the peer, amount, visibility, and an explicit funding confirmation. Sending a payment requires the same kind of explicit confirmation. The panel does not choose peers, manage channel liquidity, or close channels.
 
 The package resolves `bitcoin-cli` from the installed Bitcoin Core resource
 directory instead of assuming a particular upstream version. The service is
