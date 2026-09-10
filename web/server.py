@@ -45,6 +45,31 @@ NODE_SETTINGS = {
 }
 
 
+def _last_json_value(text):
+    """Return the last complete top-level JSON value in text.
+
+    lightning-cli auto-subscribes to progress notifications for
+    long-running commands like xpay/pay and prints each one as its own
+    JSON object to stdout ahead of the final result, so stdout can be
+    several concatenated JSON documents rather than exactly one.
+    """
+    decoder = json.JSONDecoder()
+    index = 0
+    length = len(text)
+    last = None
+    found = False
+    while index < length:
+        while index < length and text[index] in " \t\r\n":
+            index += 1
+        if index >= length:
+            break
+        last, index = decoder.raw_decode(text, index)
+        found = True
+    if not found:
+        raise json.JSONDecodeError("no JSON value found", text, 0)
+    return last
+
+
 def _run_cli(command, timeout):
     completed = subprocess.run(
         command,
@@ -69,7 +94,7 @@ def _run_cli(command, timeout):
             message = detail[-1] if detail else "Core Lightning RPC request failed (exit code " + str(completed.returncode) + ")"
         raise RuntimeError("Core Lightning RPC failed: " + str(message)[:500])
     try:
-        return json.loads(completed.stdout)
+        return _last_json_value(completed.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError("Core Lightning returned invalid JSON") from exc
 
